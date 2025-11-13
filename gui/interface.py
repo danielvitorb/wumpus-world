@@ -11,7 +11,6 @@ WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
 WHITE = (255, 255, 255)
 GRAY = (220, 220, 220)
 BLACK = (0, 0, 0)
-BLUE = (0, 100, 200)
 
 class MundoWumpusGUI:
     def __init__(self):
@@ -22,7 +21,7 @@ class MundoWumpusGUI:
         # Caminho dos assets
         self.assets_path = os.path.join(os.path.dirname(__file__), "assets")
 
-        # Carregar imagens
+        # Carregar imagens (se não existir, o pygame vai lançar erro — mantenha os arquivos em assets/)
         self.images = {
             "agent": pygame.image.load(os.path.join(self.assets_path, "agent.png")),
             "wumpus": pygame.image.load(os.path.join(self.assets_path, "wumpus.png")),
@@ -45,11 +44,11 @@ class MundoWumpusGUI:
             ["agent", None, "pit", None]
         ]
 
-        # Gerar percepções
+        # Gerar percepções (agora sem duplicatas)
         self.perceptions = self.gerar_percepcoes()
 
     def adjacentes(self, row, col):
-        """Retorna as posições adjacentes válidas"""
+        """Retorna as posições adjacentes válidas (ordem: cima, baixo, esquerda, direita)."""
         vizinhos = []
         if row > 0: vizinhos.append((row - 1, col))
         if row < ROWS - 1: vizinhos.append((row + 1, col))
@@ -58,22 +57,28 @@ class MundoWumpusGUI:
         return vizinhos
 
     def gerar_percepcoes(self):
-        """Cria o mapa de percepções com base na posição de Wumpus, ouro e poços"""
-        percep = [[[] for _ in range(COLS)] for _ in range(ROWS)]
+        """
+        Cria o mapa de percepções com base na posição de Wumpus, ouro e poços.
+        Usa sets temporariamente para evitar duplicatas.
+        Retorna uma matriz de listas (percepções por célula).
+        """
+        percep_sets = [[set() for _ in range(COLS)] for _ in range(ROWS)]
 
         for i in range(ROWS):
             for j in range(COLS):
                 cell = self.map[i][j]
                 if cell == "wumpus":
-                    for (x, y) in self.adjacentes(i, j):
-                        percep[x][y].append("Fedor")
+                    for (r, c) in self.adjacentes(i, j):
+                        percep_sets[r][c].add("Fedor")
                 elif cell == "pit":
-                    for (x, y) in self.adjacentes(i, j):
-                        percep[x][y].append("Brisa")
+                    for (r, c) in self.adjacentes(i, j):
+                        percep_sets[r][c].add("Brisa")
                 elif cell == "gold":
-                    percep[i][j].append("Brilho")
+                    percep_sets[i][j].add("Brilho")
 
-        return percep
+        # Converte sets para listas (mantendo ordem estável)
+        percep_list = [[sorted(list(s)) for s in row] for row in percep_sets]
+        return percep_list
 
     def draw_grid(self):
         """Desenha o tabuleiro"""
@@ -95,15 +100,21 @@ class MundoWumpusGUI:
                     self.screen.blit(self.images[element], (x, y))
 
     def draw_perceptions(self):
-        """Desenha as percepções em cada célula"""
+        """Desenha as percepções em cada célula (preto), posicionando verticalmente para não extrapolar."""
         for row in range(ROWS):
             for col in range(COLS):
                 percep = self.perceptions[row][col]
                 if percep:
+                    # vertical layout: alinhar a lista de percepções acima da borda inferior da célula
+                    max_lines = len(percep)
+                    # espaço entre linhas
+                    line_h = 16
+                    # y inicial de modo que o último texto fique a 6px do fundo da célula
+                    y_start = row * CELL_SIZE + CELL_SIZE - 6 - (max_lines * line_h)
                     for idx, p in enumerate(percep):
-                        text = self.font.render(p, True, BLUE)
+                        text = self.font.render(p, True, BLACK)  # mudou para preto
                         x = col * CELL_SIZE + 8
-                        y = row * CELL_SIZE + 80 + (idx * 15)
+                        y = y_start + idx * line_h
                         self.screen.blit(text, (x, y))
 
     def run(self):
@@ -119,7 +130,7 @@ class MundoWumpusGUI:
             self.screen.fill(WHITE)
             self.draw_grid()
             self.draw_elements()
-            self.draw_perceptions()  # <-- Novo método
+            self.draw_perceptions()
             pygame.display.flip()
             clock.tick(30)
 
