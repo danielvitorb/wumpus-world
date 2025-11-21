@@ -1,7 +1,3 @@
-# environment.py
-# Environment for a grid-based game where an agent moves autonomously.
-# The user will NOT use the keyboard; instead, an agent will choose actions.
-
 class Environment:
     def __init__(self, grid, start_pos, goal_pos):
         self.grid = grid
