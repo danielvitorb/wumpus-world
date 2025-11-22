@@ -15,7 +15,8 @@ BLACK = (0, 0, 0)
 PERCEPTION_COLOR = BLACK
 
 class MundoWumpusGUI:
-    def __init__(self):
+    def __init__(self, search_method):
+        self.search_method = search_method
         pygame.init()
         pygame.font.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
