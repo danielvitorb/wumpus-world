@@ -6,7 +6,7 @@ import os
 ROWS, COLS = 4, 4
 CELL_SIZE = 120
 WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
-ICON_PADDING = 10  # espaço interno para ícones (20 px total em largura/altura)
+ICON_PADDING = 10  # espaço interno para ícones
 
 # Cores
 WHITE = (255, 255, 255)
@@ -14,26 +14,27 @@ GRAY = (220, 220, 220)
 BLACK = (0, 0, 0)
 PERCEPTION_COLOR = BLACK
 
+
 class MundoWumpusGUI:
     def __init__(self, search_method):
         self.search_method = search_method
+
         pygame.init()
         pygame.font.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Mundo de Wumpus")
 
-        # Caminho dos assets (pasta gui/assets)
+        # Caminho dos assets
         self.assets_path = os.path.join(os.path.dirname(__file__), "assets")
 
-        # Fonte para percepções
+        # Fonte
         self.font = pygame.font.SysFont("arial", 14, bold=True)
 
-        # Carrega imagens (com fallback)
+        # Carrega imagens
         self.images = {}
         self._load_images()
 
-        # Mapa fixo conforme definido
-        # OBS: índices [row][col], row 0 é topo da janela
+        # Mapa fixo
         self.map = [
             [None, None, None, "pit"],
             ["wumpus", "gold", "pit", None],
@@ -41,13 +42,20 @@ class MundoWumpusGUI:
             ["agent", None, "pit", None]
         ]
 
-        # Gerar percepções (sem duplicatas)
+        # Agente começa em (3,0)
+        self.agent_pos = (3, 0)
+
+        # Marca quais células já foram reveladas
+        self.visited = [[False for _ in range(COLS)] for _ in range(ROWS)]
+        self.visited[self.agent_pos[0]][self.agent_pos[1]] = True  # revela posição inicial
+
+        # Percepções
         self.perceptions = self._gerar_percepcoes()
 
+    # -------------------------------------------------------
+    # LOADING
+    # -------------------------------------------------------
     def _safe_load(self, filename):
-        """
-        Carrega a imagem se existir; caso contrário cria um placeholder surface.
-        """
         path = os.path.join(self.assets_path, filename)
         if os.path.exists(path):
             try:
@@ -55,7 +63,8 @@ class MundoWumpusGUI:
                 return img
             except Exception as e:
                 print(f"Erro ao carregar {path}: {e}")
-        # Placeholder: surface simples com cor
+
+        # Placeholder caso falhe
         placeholder = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
         placeholder.fill((180, 180, 180))
         pygame.draw.rect(placeholder, (120, 120, 120), placeholder.get_rect(), 3)
@@ -64,100 +73,97 @@ class MundoWumpusGUI:
         return placeholder
 
     def _load_images(self):
-        """
-        Carrega e redimensiona imagens:
-        - ground -> CELL_SIZE x CELL_SIZE
-        - icons (agent, wumpus, gold, pit) -> (CELL_SIZE - ICON_PADDING*2)
-        """
         # ground
-        ground_img = self._safe_load("ground.png")
-        self.images["ground"] = pygame.transform.smoothscale(ground_img, (CELL_SIZE, CELL_SIZE))
+        ground = self._safe_load("ground.png")
+        self.images["ground"] = pygame.transform.smoothscale(ground, (CELL_SIZE, CELL_SIZE))
 
-        # icons: smaller than cell to avoid overflow
+        # imagem de célula não explorada
+        unexplored = self._safe_load("unexplored.png")
+        self.images["unexplored"] = pygame.transform.smoothscale(unexplored, (CELL_SIZE, CELL_SIZE))
+
+        # icons
         icon_size = CELL_SIZE - ICON_PADDING * 2
-        for name, fname in [("agent", "agent.png"),
-                             ("wumpus", "wumpus.png"),
-                             ("gold", "gold.png"),
-                             ("pit", "pit.png")]:
+        for name, fname in [
+            ("agent", "agent.png"),
+            ("wumpus", "wumpus.png"),
+            ("gold", "gold.png"),
+            ("pit", "pit.png")
+        ]:
             img = self._safe_load(fname)
-            # mantém proporção ao redimensionar
             img = pygame.transform.smoothscale(img, (icon_size, icon_size))
             self.images[name] = img
 
+    # -------------------------------------------------------
+    # PERCEPÇÕES
+    # -------------------------------------------------------
     def adjacentes(self, row, col):
-        """Retorna as posições adjacentes válidas (cima, baixo, esquerda, direita)."""
-        vizinhos = []
-        if row > 0: vizinhos.append((row - 1, col))
-        if row < ROWS - 1: vizinhos.append((row + 1, col))
-        if col > 0: vizinhos.append((row, col - 1))
-        if col < COLS - 1: vizinhos.append((row, col + 1))
-        return vizinhos
+        v = []
+        if row > 0: v.append((row - 1, col))
+        if row < ROWS - 1: v.append((row + 1, col))
+        if col > 0: v.append((row, col - 1))
+        if col < COLS - 1: v.append((row, col + 1))
+        return v
 
     def _gerar_percepcoes(self):
-        """Gera percepções sem duplicatas e retorna matriz de listas."""
-        percep_sets = [[set() for _ in range(COLS)] for _ in range(ROWS)]
+        p = [[set() for _ in range(COLS)] for _ in range(ROWS)]
+
         for r in range(ROWS):
             for c in range(COLS):
                 cell = self.map[r][c]
+
                 if cell == "wumpus":
-                    for (nr, nc) in self.adjacentes(r, c):
-                        percep_sets[nr][nc].add("Fedor")
+                    for nr, nc in self.adjacentes(r, c):
+                        p[nr][nc].add("Fedor")
+
                 elif cell == "pit":
-                    for (nr, nc) in self.adjacentes(r, c):
-                        percep_sets[nr][nc].add("Brisa")
+                    for nr, nc in self.adjacentes(r, c):
+                        p[nr][nc].add("Brisa")
+
                 elif cell == "gold":
-                    percep_sets[r][c].add("Brilho")
-        # converter para lista ordenada (para consistência)
-        return [[sorted(list(s)) for s in row] for row in percep_sets]
+                    p[r][c].add("Brilho")
 
-    def draw_ground(self):
-        """Desenha o ground (fundo) em todas as células."""
-        for row in range(ROWS):
-            for col in range(COLS):
-                x = col * CELL_SIZE
-                y = row * CELL_SIZE
-                self.screen.blit(self.images["ground"], (x, y))
+        return [[sorted(list(s)) for s in row] for row in p]
 
-    def draw_grid_lines(self):
-        """Desenha as linhas do grid sobre o ground."""
-        for row in range(ROWS):
-            for col in range(COLS):
-                x = col * CELL_SIZE
-                y = row * CELL_SIZE
-                pygame.draw.rect(self.screen, (50,50,50), (x, y, CELL_SIZE, CELL_SIZE), 2)
+    # -------------------------------------------------------
+    # DRAWING
+    # -------------------------------------------------------
+    def draw_cell(self, r, c):
+        x = c * CELL_SIZE
+        y = r * CELL_SIZE
+        rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
 
-    def draw_elements(self):
-        """Desenha ícones centralizados dentro da célula."""
-        for row in range(ROWS):
-            for col in range(COLS):
-                element = self.map[row][col]
-                if element:
-                    x = col * CELL_SIZE
-                    y = row * CELL_SIZE
-                    img = self.images.get(element)
-                    if img:
-                        iw, ih = img.get_width(), img.get_height()
-                        # centraliza o ícone na célula
-                        offset_x = x + (CELL_SIZE - iw) // 2
-                        offset_y = y + (CELL_SIZE - ih) // 2
-                        self.screen.blit(img, (offset_x, offset_y))
+        # sempre desenha ground primeiro
+        self.screen.blit(self.images["ground"], (x, y))
 
-    def draw_perceptions(self):
-        """Desenha as percepções em cada célula (preto), posicionando verticalmente sem extrapolar."""
-        for row in range(ROWS):
-            for col in range(COLS):
-                percep = self.perceptions[row][col]
-                if percep:
-                    max_lines = len(percep)
-                    line_h = 16
-                    # deixar um pequeno padding inferior (6 px)
-                    y_start = row * CELL_SIZE + CELL_SIZE - 6 - (max_lines * line_h)
-                    x = col * CELL_SIZE + 6
-                    for idx, p in enumerate(percep):
-                        text = self.font.render(p, True, PERCEPTION_COLOR)
-                        y = y_start + idx * line_h
-                        self.screen.blit(text, (x, y))
+        # se NÃO visitada → desenha unexplored e sai
+        if not self.visited[r][c]:
+            self.screen.blit(self.images["unexplored"], (x, y))
+            return
 
+        # desenha elemento da célula
+        element = self.map[r][c]
+        if element:
+            img = self.images[element]
+            iw, ih = img.get_width(), img.get_height()
+            ox = x + (CELL_SIZE - iw) // 2
+            oy = y + (CELL_SIZE - ih) // 2
+            self.screen.blit(img, (ox, oy))
+
+        # desenha percepções
+        perceps = self.perceptions[r][c]
+        if perceps:
+            line_h = 16
+            y_start = y + CELL_SIZE - 4 - (len(perceps) * line_h)
+            for idx, p in enumerate(perceps):
+                text = self.font.render(p, True, PERCEPTION_COLOR)
+                self.screen.blit(text, (x + 6, y_start + idx * line_h))
+
+        # grid por cima
+        pygame.draw.rect(self.screen, (50, 50, 50), rect, 2)
+
+    # -------------------------------------------------------
+    # LOOP PRINCIPAL
+    # -------------------------------------------------------
     def run(self):
         clock = pygame.time.Clock()
         running = True
@@ -167,12 +173,12 @@ class MundoWumpusGUI:
                 if event.type == pygame.QUIT:
                     running = False
 
-            # ordem de desenho: ground -> elementos -> grid lines -> percepções (ou percepções por cima das linhas se preferir)
             self.screen.fill(WHITE)
-            self.draw_ground()
-            self.draw_elements()
-            self.draw_grid_lines()
-            self.draw_perceptions()
+
+            # desenha tudo célula por célula com fog of war
+            for r in range(ROWS):
+                for c in range(COLS):
+                    self.draw_cell(r, c)
 
             pygame.display.flip()
             clock.tick(30)
@@ -180,6 +186,8 @@ class MundoWumpusGUI:
         pygame.quit()
         sys.exit()
 
+
+# Debug
 if __name__ == "__main__":
-    gui = MundoWumpusGUI()
+    gui = MundoWumpusGUI("bfs")
     gui.run()
