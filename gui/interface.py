@@ -1,15 +1,22 @@
 import pygame
 import sys
 from gui.asset_loader import load_all_assets, CELL_SIZE
+from core.environment import WumpusEnvironment
+from agent.player import Agent
 
-# Configurações de Cores e Tela
+# Configurações de Tela
+# Vamos dar um espaço extra na altura para o texto de status
+HUD_HEIGHT = 100
 ROWS, COLS = 4, 4
-WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
+WIDTH = COLS * CELL_SIZE
+HEIGHT = (ROWS * CELL_SIZE) + HUD_HEIGHT
 
 # Cores
 WHITE = (255, 255, 255)
 GRAY = (50, 50, 50)
-PERCEPTION_COLOR = (0, 0, 0)  # Preto para o texto
+BG_COLOR = (20, 20, 20)
+TEXT_COLOR = (255, 255, 255)
+PERCEPTION_COLOR = (255, 255, 0)  # Amarelo para destacar alertas
 
 
 class MundoWumpusGUI:
@@ -19,41 +26,25 @@ class MundoWumpusGUI:
         pygame.init()
         pygame.font.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption(f"Mundo de Wumpus - {search_method}")
+        pygame.display.set_caption(f"Wumpus World AI - {search_method.upper()}")
 
-        # Fonte para desenhar percepções (Brisa, Fedor)
-        self.font = pygame.font.SysFont("arial", 14, bold=True)
+        # Fontes
+        self.font_info = pygame.font.SysFont("arial", 16)
+        self.font_percept = pygame.font.SysFont("arial", 12, bold=True)
 
-        # 1. CARREGAMENTO DOS ASSETS (A Mágica acontece aqui)
-        # Importamos do asset_loader corrigido
+        # 1. Carregar Imagens
         print("Carregando assets...")
         self.images = load_all_assets()
 
-        # -----------------------------------------------------------
-        # ESTADO DO JOGO (TEMPORÁRIO - Será movido para environment.py)
-        # -----------------------------------------------------------
-        # Estamos mantendo aqui só para você ver a tela funcionar agora.
-        # No futuro, o 'self.map' virá do objeto 'world' passado no __init__
-        self.map = [
-            [None, None, None, "pit"],
-            ["wumpus", "gold", "pit", None],
-            [None, None, None, None],
-            ["agent", None, "pit", None]
-        ]
+        # 2. Inicializar o MUNDO e o AGENTE
+        # Aqui conectamos as peças que você criou nas outras pastas!
+        self.world = WumpusEnvironment()  # Cria o tabuleiro lógico
+        self.agent = Agent(self.world)  # Cria o agente e passa o mundo para ele
 
-        # Estado do Agente
-        self.agent_pos = (3, 0)
-        self.agent_direction = "UP"  # UP, DOWN, LEFT, RIGHT
-
-        # Fog of War (quais células eu já vi)
-        self.visited = [[False for _ in range(COLS)] for _ in range(ROWS)]
-        self.visited[3][0] = True
-
-        # Percepções (Isso deve vir do Environment, mas mantive placeholder para não quebrar)
-        self.perceptions = [[[] for _ in range(COLS)] for _ in range(ROWS)]
-        # Exemplo hardcoded só para teste visual:
-        self.perceptions[2][0] = ["Fedor"]
-        self.perceptions[3][1] = ["Brisa"]
+        # Variáveis de Controle da Animação
+        self.agent_direction = "UP"  # Começa virado para cima
+        self.last_move_time = 0
+        self.move_delay = 500  # Tempo em milissegundos entre movimentos (velocidade)
 
     # -------------------------------------------------------
     # DESENHO
@@ -63,77 +54,129 @@ class MundoWumpusGUI:
         y = r * CELL_SIZE
         rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
 
-        # 1. Desenha o CHÃO em tudo
+        # 1. Chão Base
         self.screen.blit(self.images["GROUND"], (x, y))
 
-        # 2. Lógica de Fog of War (Não visitado = Nevoa)
-        if not self.visited[r][c]:
-            # Se tiver a imagem UNEXPLORED carregada, usa ela, senão desenha cinza
-            if "UNEXPLORED" in self.images:
-                self.screen.blit(self.images["UNEXPLORED"], (x, y))
-            else:
-                pygame.draw.rect(self.screen, (30, 30, 30), rect)  # Retângulo cinza escuro
+        # 2. Fog of War (Opcional - Para debug, mostramos tudo, mas escurecemos o não visitado)
+        # Se quiser esconder totalmente, descomente a lógica abaixo
+        is_visited = (r, c) in self.agent.visited
 
-            pygame.draw.rect(self.screen, GRAY, rect, 1)  # Borda
-            return  # Não desenha o conteúdo se não visitou
-
-        # 3. Conteúdo da Célula
-        element = self.map[r][c]
-
-        if element == "pit":
+        # Desenha o conteúdo REAL do mundo (Trapaça visual para quem assiste)
+        element = self.world.grid[r][c]
+        if element == 'P':
             self.screen.blit(self.images["PIT"], (x, y))
-        elif element == "gold":
+        elif element == 'G':
             self.screen.blit(self.images["GOLD"], (x, y))
-        elif element == "wumpus":
+        elif element == 'W':
             self.screen.blit(self.images["WUMPUS"], (x, y))
 
-        # 4. Desenhar o Agente (Sobreposto aos elementos)
-        # Verifica se o agente está nesta célula
-        if (r, c) == self.agent_pos:
-            # Pega a imagem baseada na direção: AGENT_UP, AGENT_LEFT...
+        # Se não visitado, desenha uma camada semi-transparente ou ícone 'unexplored'
+        if not is_visited:
+            if "UNEXPLORED" in self.images:
+                # Desenha com transparência se possível, ou opaco
+                self.screen.blit(self.images["UNEXPLORED"], (x, y))
+            else:
+                s = pygame.Surface((CELL_SIZE, CELL_SIZE))
+                s.set_alpha(150)
+                s.fill((0, 0, 0))
+                self.screen.blit(s, (x, y))
+
+        # 3. Agente
+        if (r, c) == self.agent.pos:
             key = f"AGENT_{self.agent_direction}"
             if key in self.images:
                 self.screen.blit(self.images[key], (x, y))
             else:
-                # Fallback se a direção falhar
                 self.screen.blit(self.images["AGENT"], (x, y))
 
-        # 5. Desenhar Texto das Percepções (Brisa, Fedor)
-        perceps = self.perceptions[r][c]
-        if perceps:
-            line_h = 16
-            y_start = y + CELL_SIZE - 4 - (len(perceps) * line_h)
-            for idx, p in enumerate(perceps):
-                # Desenha um fundo semitransparente para ler melhor o texto
-                text = self.font.render(p, True, PERCEPTION_COLOR)
-                self.screen.blit(text, (x + 6, y_start + idx * line_h))
+        # 4. Percepções (Brisa, Fedor) - Baseado no que o AGENTE sentiu
+        # Só desenhamos percepções se o agente estiver lá ou já visitou
+        if is_visited:
+            # Pegamos do mundo o que existe de verdade nessa célula
+            percepts = self.world.get_percepts((r, c))
 
-        # Borda da célula
+            line_h = 14
+            y_start = y + CELL_SIZE - 4 - (len(percepts) * line_h)
+            for idx, p in enumerate(percepts):
+                # Desenha sombra preta para ler melhor
+                txt_shadow = self.font_percept.render(p, True, (0, 0, 0))
+                txt = self.font_percept.render(p, True, PERCEPTION_COLOR)
+                self.screen.blit(txt_shadow, (x + 7, y_start + idx * line_h + 1))
+                self.screen.blit(txt, (x + 6, y_start + idx * line_h))
+
+        # Borda
         pygame.draw.rect(self.screen, GRAY, rect, 1)
+
+    def draw_hud(self):
+        """Desenha o painel de informações na parte inferior."""
+        base_y = ROWS * CELL_SIZE
+        pygame.draw.rect(self.screen, BG_COLOR, (0, base_y, WIDTH, HUD_HEIGHT))
+
+        # Linha 1: Algoritmo e Status
+        status_txt = f"Algoritmo: {self.search_method.upper()} | Status: {self.agent.message}"
+        surf = self.font_info.render(status_txt, True, TEXT_COLOR)
+        self.screen.blit(surf, (10, base_y + 10))
+
+        # Linha 2: Posição e Ouro
+        gold_txt = "Sim" if self.agent.has_gold else "Não"
+        info_txt = f"Posição: {self.agent.pos} | Tem Ouro? {gold_txt}"
+        surf2 = self.font_info.render(info_txt, True, TEXT_COLOR)
+        self.screen.blit(surf2, (10, base_y + 35))
+
+        # Linha 3: Instrução
+        inst_txt = "O jogo roda automaticamente..."
+        if self.agent.game_over:
+            inst_txt = "FIM DE JOGO! Feche a janela para sair."
+        surf3 = self.font_info.render(inst_txt, True, (150, 150, 150))
+        self.screen.blit(surf3, (10, base_y + 65))
+
+    def update_direction(self, move_action):
+        """Atualiza a variável de direção baseada no movimento (dr, dc)."""
+        dr, dc = move_action
+        if dr == -1:
+            self.agent_direction = "UP"
+        elif dr == 1:
+            self.agent_direction = "DOWN"
+        elif dc == -1:
+            self.agent_direction = "LEFT"
+        elif dc == 1:
+            self.agent_direction = "RIGHT"
 
     def run(self):
         clock = pygame.time.Clock()
         running = True
 
         while running:
-            # Eventos
+            # 1. Eventos (Fechar janela)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
 
-                # TESTE RÁPIDO: Setas mudam a direção do agente (apenas visual)
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_UP: self.agent_direction = "UP"
-                    if event.key == pygame.K_DOWN: self.agent_direction = "DOWN"
-                    if event.key == pygame.K_LEFT: self.agent_direction = "LEFT"
-                    if event.key == pygame.K_RIGHT: self.agent_direction = "RIGHT"
+            # 2. Lógica da IA (Temporizada)
+            current_time = pygame.time.get_ticks()
+            if not self.agent.game_over:
+                if current_time - self.last_move_time > self.move_delay:
 
-            # Renderização
-            self.screen.fill(WHITE)
+                    # Passo A: O agente Pensa (Planeja o caminho)
+                    self.agent.think(self.search_method)
+
+                    # Passo B: O agente Executa um movimento do plano
+                    move_action = self.agent.move()
+
+                    # Atualiza visual do boneco virando
+                    if move_action != (0, 0):
+                        self.update_direction(move_action)
+
+                    self.last_move_time = current_time
+
+            # 3. Renderização
+            self.screen.fill(BG_COLOR)
 
             for r in range(ROWS):
                 for c in range(COLS):
                     self.draw_cell(r, c)
+
+            self.draw_hud()
 
             pygame.display.flip()
             clock.tick(30)
@@ -142,12 +185,11 @@ class MundoWumpusGUI:
         sys.exit()
 
 
-# Bloco de execução direta para teste
+# Bloco de teste direto
 if __name__ == "__main__":
-    # Para rodar isso diretamente, você precisaria estar na raiz e rodar: python -m gui.interface
+    # Para testar apenas a interface sem o menu
     try:
-        gui = MundoWumpusGUI("teste")
-        gui.run()
+        app = MundoWumpusGUI("astar")
+        app.run()
     except Exception as e:
-        print(f"Erro ao rodar interface: {e}")
-        print("Dica: Rode a partir do arquivo main.py na raiz do projeto.")
+        print(e)
