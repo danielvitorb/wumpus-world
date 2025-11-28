@@ -33,7 +33,7 @@ ASSET_PATHS = {
     # Suponho que essa imagem exista baseada no seu relato antigo
 
     # Áudio
-    "BG_MUSIC": os.path.join(AUDIO_DIR, "background.mp3")
+    "BG_MUSIC": os.path.join(AUDIO_DIR, "music.mp3")
 }
 
 # -------------------------------------------------------
