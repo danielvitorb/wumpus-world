@@ -7,7 +7,7 @@ def main():
 
     # --- TOCAR TRILHA SONORA ASSIM QUE O PROGRAMA INICIA ---
     pygame.mixer.init()
-    pygame.mixer.music.load("gui/assets/background.mp3")  # coloque aqui o caminho do seu áudio
+    pygame.mixer.music.load("assets/audios/music.mp3")  # coloque aqui o caminho do seu áudio
     pygame.mixer.music.play(-1)  # -1 = loop infinito
 
     # Exibe o menu de seleção de busca

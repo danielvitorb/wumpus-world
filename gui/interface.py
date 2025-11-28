@@ -1,18 +1,15 @@
 import pygame
 import sys
-import os
+from gui.asset_loader import load_all_assets, CELL_SIZE
 
-# Configurações básicas
+# Configurações de Cores e Tela
 ROWS, COLS = 4, 4
-CELL_SIZE = 120
 WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
-ICON_PADDING = 10  # espaço interno para ícones
 
 # Cores
 WHITE = (255, 255, 255)
-GRAY = (220, 220, 220)
-BLACK = (0, 0, 0)
-PERCEPTION_COLOR = BLACK
+GRAY = (50, 50, 50)
+PERCEPTION_COLOR = (0, 0, 0)  # Preto para o texto
 
 
 class MundoWumpusGUI:
@@ -22,19 +19,21 @@ class MundoWumpusGUI:
         pygame.init()
         pygame.font.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("Mundo de Wumpus")
+        pygame.display.set_caption(f"Mundo de Wumpus - {search_method}")
 
-        # Caminho dos assets
-        self.assets_path = os.path.join(os.path.dirname(__file__), "assets")
-
-        # Fonte
+        # Fonte para desenhar percepções (Brisa, Fedor)
         self.font = pygame.font.SysFont("arial", 14, bold=True)
 
-        # Carrega imagens
-        self.images = {}
-        self._load_images()
+        # 1. CARREGAMENTO DOS ASSETS (A Mágica acontece aqui)
+        # Importamos do asset_loader corrigido
+        print("Carregando assets...")
+        self.images = load_all_assets()
 
-        # Mapa fixo
+        # -----------------------------------------------------------
+        # ESTADO DO JOGO (TEMPORÁRIO - Será movido para environment.py)
+        # -----------------------------------------------------------
+        # Estamos mantendo aqui só para você ver a tela funcionar agora.
+        # No futuro, o 'self.map' virá do objeto 'world' passado no __init__
         self.map = [
             [None, None, None, "pit"],
             ["wumpus", "gold", "pit", None],
@@ -42,140 +41,96 @@ class MundoWumpusGUI:
             ["agent", None, "pit", None]
         ]
 
-        # Agente começa em (3,0)
+        # Estado do Agente
         self.agent_pos = (3, 0)
+        self.agent_direction = "UP"  # UP, DOWN, LEFT, RIGHT
 
-        # Marca quais células já foram reveladas
+        # Fog of War (quais células eu já vi)
         self.visited = [[False for _ in range(COLS)] for _ in range(ROWS)]
-        self.visited[self.agent_pos[0]][self.agent_pos[1]] = True  # revela posição inicial
+        self.visited[3][0] = True
 
-        # Percepções
-        self.perceptions = self._gerar_percepcoes()
-
-    # -------------------------------------------------------
-    # LOADING
-    # -------------------------------------------------------
-    def _safe_load(self, filename):
-        path = os.path.join(self.assets_path, filename)
-        if os.path.exists(path):
-            try:
-                img = pygame.image.load(path).convert_alpha()
-                return img
-            except Exception as e:
-                print(f"Erro ao carregar {path}: {e}")
-
-        # Placeholder caso falhe
-        placeholder = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
-        placeholder.fill((180, 180, 180))
-        pygame.draw.rect(placeholder, (120, 120, 120), placeholder.get_rect(), 3)
-        txt = pygame.font.SysFont("arial", 12, bold=True).render(filename.split('.')[0], True, (80, 80, 80))
-        placeholder.blit(txt, (6, 6))
-        return placeholder
-
-    def _load_images(self):
-        # ground
-        ground = self._safe_load("ground.png")
-        self.images["ground"] = pygame.transform.smoothscale(ground, (CELL_SIZE, CELL_SIZE))
-
-        # imagem de célula não explorada
-        unexplored = self._safe_load("unexplored.png")
-        self.images["unexplored"] = pygame.transform.smoothscale(unexplored, (CELL_SIZE, CELL_SIZE))
-
-        # icons
-        icon_size = CELL_SIZE - ICON_PADDING * 2
-        for name, fname in [
-            ("agent", "agent.png"),
-            ("wumpus", "wumpus.png"),
-            ("gold", "gold.png"),
-            ("pit", "pit.png")
-        ]:
-            img = self._safe_load(fname)
-            img = pygame.transform.smoothscale(img, (icon_size, icon_size))
-            self.images[name] = img
+        # Percepções (Isso deve vir do Environment, mas mantive placeholder para não quebrar)
+        self.perceptions = [[[] for _ in range(COLS)] for _ in range(ROWS)]
+        # Exemplo hardcoded só para teste visual:
+        self.perceptions[2][0] = ["Fedor"]
+        self.perceptions[3][1] = ["Brisa"]
 
     # -------------------------------------------------------
-    # PERCEPÇÕES
-    # -------------------------------------------------------
-    def adjacentes(self, row, col):
-        v = []
-        if row > 0: v.append((row - 1, col))
-        if row < ROWS - 1: v.append((row + 1, col))
-        if col > 0: v.append((row, col - 1))
-        if col < COLS - 1: v.append((row, col + 1))
-        return v
-
-    def _gerar_percepcoes(self):
-        p = [[set() for _ in range(COLS)] for _ in range(ROWS)]
-
-        for r in range(ROWS):
-            for c in range(COLS):
-                cell = self.map[r][c]
-
-                if cell == "wumpus":
-                    for nr, nc in self.adjacentes(r, c):
-                        p[nr][nc].add("Fedor")
-
-                elif cell == "pit":
-                    for nr, nc in self.adjacentes(r, c):
-                        p[nr][nc].add("Brisa")
-
-                elif cell == "gold":
-                    p[r][c].add("Brilho")
-
-        return [[sorted(list(s)) for s in row] for row in p]
-
-    # -------------------------------------------------------
-    # DRAWING
+    # DESENHO
     # -------------------------------------------------------
     def draw_cell(self, r, c):
         x = c * CELL_SIZE
         y = r * CELL_SIZE
         rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
 
-        # sempre desenha ground primeiro
-        self.screen.blit(self.images["ground"], (x, y))
+        # 1. Desenha o CHÃO em tudo
+        self.screen.blit(self.images["GROUND"], (x, y))
 
-        # se NÃO visitada → desenha unexplored e sai
+        # 2. Lógica de Fog of War (Não visitado = Nevoa)
         if not self.visited[r][c]:
-            self.screen.blit(self.images["unexplored"], (x, y))
-            return
+            # Se tiver a imagem UNEXPLORED carregada, usa ela, senão desenha cinza
+            if "UNEXPLORED" in self.images:
+                self.screen.blit(self.images["UNEXPLORED"], (x, y))
+            else:
+                pygame.draw.rect(self.screen, (30, 30, 30), rect)  # Retângulo cinza escuro
 
-        # desenha elemento da célula
+            pygame.draw.rect(self.screen, GRAY, rect, 1)  # Borda
+            return  # Não desenha o conteúdo se não visitou
+
+        # 3. Conteúdo da Célula
         element = self.map[r][c]
-        if element:
-            img = self.images[element]
-            iw, ih = img.get_width(), img.get_height()
-            ox = x + (CELL_SIZE - iw) // 2
-            oy = y + (CELL_SIZE - ih) // 2
-            self.screen.blit(img, (ox, oy))
 
-        # desenha percepções
+        if element == "pit":
+            self.screen.blit(self.images["PIT"], (x, y))
+        elif element == "gold":
+            self.screen.blit(self.images["GOLD"], (x, y))
+        elif element == "wumpus":
+            self.screen.blit(self.images["WUMPUS"], (x, y))
+
+        # 4. Desenhar o Agente (Sobreposto aos elementos)
+        # Verifica se o agente está nesta célula
+        if (r, c) == self.agent_pos:
+            # Pega a imagem baseada na direção: AGENT_UP, AGENT_LEFT...
+            key = f"AGENT_{self.agent_direction}"
+            if key in self.images:
+                self.screen.blit(self.images[key], (x, y))
+            else:
+                # Fallback se a direção falhar
+                self.screen.blit(self.images["AGENT"], (x, y))
+
+        # 5. Desenhar Texto das Percepções (Brisa, Fedor)
         perceps = self.perceptions[r][c]
         if perceps:
             line_h = 16
             y_start = y + CELL_SIZE - 4 - (len(perceps) * line_h)
             for idx, p in enumerate(perceps):
+                # Desenha um fundo semitransparente para ler melhor o texto
                 text = self.font.render(p, True, PERCEPTION_COLOR)
                 self.screen.blit(text, (x + 6, y_start + idx * line_h))
 
-        # grid por cima
-        pygame.draw.rect(self.screen, (50, 50, 50), rect, 2)
+        # Borda da célula
+        pygame.draw.rect(self.screen, GRAY, rect, 1)
 
-    # -------------------------------------------------------
-    # LOOP PRINCIPAL
-    # -------------------------------------------------------
     def run(self):
         clock = pygame.time.Clock()
         running = True
 
         while running:
+            # Eventos
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
 
+                # TESTE RÁPIDO: Setas mudam a direção do agente (apenas visual)
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP: self.agent_direction = "UP"
+                    if event.key == pygame.K_DOWN: self.agent_direction = "DOWN"
+                    if event.key == pygame.K_LEFT: self.agent_direction = "LEFT"
+                    if event.key == pygame.K_RIGHT: self.agent_direction = "RIGHT"
+
+            # Renderização
             self.screen.fill(WHITE)
 
-            # desenha tudo célula por célula com fog of war
             for r in range(ROWS):
                 for c in range(COLS):
                     self.draw_cell(r, c)
@@ -187,7 +142,12 @@ class MundoWumpusGUI:
         sys.exit()
 
 
-# Debug
+# Bloco de execução direta para teste
 if __name__ == "__main__":
-    gui = MundoWumpusGUI("bfs")
-    gui.run()
+    # Para rodar isso diretamente, você precisaria estar na raiz e rodar: python -m gui.interface
+    try:
+        gui = MundoWumpusGUI("teste")
+        gui.run()
+    except Exception as e:
+        print(f"Erro ao rodar interface: {e}")
+        print("Dica: Rode a partir do arquivo main.py na raiz do projeto.")
