@@ -45,7 +45,7 @@ class MundoWumpusGUI:
 
         # 2. Aumentamos o delay para 800ms (quase 1 segundo por passo)
         # Se quiser ainda mais lento, coloque 1000 ou 1200
-        self.move_delay = 1000
+        self.move_delay = 5000
 
     # -------------------------------------------------------
     # DESENHO
