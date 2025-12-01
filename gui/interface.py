@@ -28,23 +28,24 @@ class MundoWumpusGUI:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption(f"Wumpus World AI - {search_method.upper()}")
 
-        # Fontes
         self.font_info = pygame.font.SysFont("arial", 16)
         self.font_percept = pygame.font.SysFont("arial", 12, bold=True)
 
-        # 1. Carregar Imagens
         print("Carregando assets...")
         self.images = load_all_assets()
 
-        # 2. Inicializar o MUNDO e o AGENTE
-        # Aqui conectamos as peças que você criou nas outras pastas!
-        self.world = WumpusEnvironment()  # Cria o tabuleiro lógico
-        self.agent = Agent(self.world)  # Cria o agente e passa o mundo para ele
+        self.world = WumpusEnvironment()
+        self.agent = Agent(self.world)
 
-        # Variáveis de Controle da Animação
-        self.agent_direction = "UP"  # Começa virado para cima
-        self.last_move_time = 0
-        self.move_delay = 500  # Tempo em milissegundos entre movimentos (velocidade)
+        self.agent_direction = "UP"
+
+        # --- ALTERAÇÕES AQUI ---
+        # 1. Inicializa com o tempo atual para forçar a espera inicial
+        self.last_move_time = pygame.time.get_ticks()
+
+        # 2. Aumentamos o delay para 800ms (quase 1 segundo por passo)
+        # Se quiser ainda mais lento, coloque 1000 ou 1200
+        self.move_delay = 1000
 
     # -------------------------------------------------------
     # DESENHO
@@ -65,7 +66,7 @@ class MundoWumpusGUI:
         element = self.world.grid[r][c]
         if element == 'P':
             self.screen.blit(self.images["PIT"], (x, y))
-        elif element == 'G':
+        elif element == 'G' and not self.agent.has_gold:
             self.screen.blit(self.images["GOLD"], (x, y))
         elif element == 'W':
             self.screen.blit(self.images["WUMPUS"], (x, y))
@@ -94,6 +95,9 @@ class MundoWumpusGUI:
         if is_visited:
             # Pegamos do mundo o que existe de verdade nessa célula
             percepts = self.world.get_percepts((r, c))
+
+            if self.agent.has_gold and "Brilho" in percepts:
+                percepts.remove("Brilho")
 
             line_h = 14
             y_start = y + CELL_SIZE - 4 - (len(percepts) * line_h)

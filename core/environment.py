@@ -114,14 +114,16 @@ class WumpusEnvironment:
 
         # 1. Verifica Paredes (Limites do Grid)
         if not (0 <= nr < self.rows and 0 <= nc < self.cols):
-            return self.agent_pos, ["Batida"], False  # Bateu na parede
+            return self.agent_pos, ["Batida"], False
 
-        # 2. Move o agente
+            # 2. Move o agente
         self.agent_pos = (nr, nc)
         current_cell = self.grid[nr][nc]
+
+        # Gera percepções ANTES de modificar o grid (para sentir o brilho dessa vez)
         percepts = self.get_percepts((nr, nc))
 
-        # 3. Verifica Morte ou Vitória
+        # 3. Verifica interações
         if current_cell == 'W':
             self.message = "MORREU! Comido pelo Wumpus."
             self.game_over = True
@@ -130,7 +132,5 @@ class WumpusEnvironment:
             self.game_over = True
         elif current_cell == 'G':
             self.message = "Achou o Ouro!"
-            # Nota: O jogo geralmente só acaba quando ele volta pro início,
-            # mas podemos simplificar ou implementar isso no Agente.
 
         return self.agent_pos, percepts, self.game_over
