@@ -2,14 +2,12 @@
 
 **Disciplina:** Introdução à Inteligência Artificial  
 **Semestre:** 2025.2  
-**Professor:** André  
-**Turma:** [T03 / T04]
+**Professor:** André Luis Fonseca Faustino  
+**Turma:** T04
 
 ## Integrantes do Grupo
-* Nome Completo (Matrícula)
-* Nome Completo (Matrícula)
-* Nome Completo (Matrícula)
-* Nome Completo (Matrícula)
+* Clóvis Luan Medeiros de Araújo (20240015041)
+* Daniel Vítor de Oliveira Bezerra (20240005377)
 
 ## Descrição do Projeto
 [Descreva aqui em 1 ou 2 parágrafos a proposta do projeto e as tecnologias utilizadas para seu desenvolvimento]
