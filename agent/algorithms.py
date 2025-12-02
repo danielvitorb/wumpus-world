@@ -6,7 +6,6 @@ from collections import deque
 class SearchAlgorithms:
     """
     Algoritmos de busca puros.
-    Agora aceitam o parâmetro 'safe_only' para filtrar por onde podem passar.
     """
 
     @staticmethod
