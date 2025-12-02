@@ -10,22 +10,28 @@
 * Daniel Vítor de Oliveira Bezerra (20240005377)
 
 ## Descrição do Projeto
-[Descreva aqui em 1 ou 2 parágrafos a proposta do projeto e as tecnologias utilizadas para seu desenvolvimento]
+Este projeto implementa uma simulação interativa do clássico problema de Inteligência Artificial: o **Mundo do Wumpus**. O objetivo é desenvolver um Agente Inteligente capaz de explorar um ambiente parcialmente observável, inferir conhecimentos sobre perigos (Poços e Wumpus) baseados em percepções sensoriais (Brisa e Fedor) e traçar rotas seguras para encontrar o Ouro e retornar à saída.
+
+O projeto foi desenvolvido em **Python** utilizando a biblioteca **Pygame** para a interface gráfica. O agente possui uma Base de Conhecimento (KB) dinâmica e permite ao usuário selecionar entre diferentes algoritmos de busca para a tomada de decisão:
+* **BFS (Busca em Largura)**
+* **DFS (Busca em Profundidade)**
+* **A* (A-Star Search)**
 
 ## Guia de Instalação e Execução
-[Descreva os passos para instalacao e execucao do projeto. Inclua um passo-a-passo claro de como utilizar a proposta desenvolvida. Veja o exemplo abaixo.]
+
+Siga os passos abaixo para rodar o projeto em sua máquina local.
 
 ### 1. Instalação das Dependências
-Certifique-se de ter o **Python 3.x** instalado. Clone o repositório e instale as bibliotecas listadas no `requirements.txt`:
+Certifique-se de ter o **Python 3.x** instalado. Clone o repositório e instale as bibliotecas necessárias:
 
 ```bash
 # Clone o repositório
-git clone [https://github.com/usuario/nome-do-repo.git](https://github.com/usuario/nome-do-repo.git)
+git clone [INSIRA O LINK DO SEU REPOSITÓRIO AQUI]
 
 # Entre na pasta do projeto
-cd nome-do-repo
+cd wumpus-world
 
-# Instale as dependências
+# Instale as dependências (neste projeto, a principal é o pygame)
 pip install -r requirements.txt
 ````
 
