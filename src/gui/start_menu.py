@@ -1,14 +1,10 @@
 import pygame
 import sys
+from src.utils.constants import WHITE, BLACK, GRAY
 
-# Tamanho da tela inicial
+# Configurações específicas do Menu (não precisam estar no constants.py global)
 WIDTH, HEIGHT = 500, 400
-
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (200, 200, 200)
 DARK_GRAY = (100, 100, 100)
-
 
 class Button:
     def __init__(self, x, y, w, h, text):
@@ -38,7 +34,7 @@ class StartMenu:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.font = pygame.font.SysFont("arial", 26, bold=True)
 
-        # Botões
+        # Botões centralizados
         self.buttons = [
             Button(150, 120, 200, 50, "Busca BFS"),
             Button(150, 190, 200, 50, "Busca DFS"),

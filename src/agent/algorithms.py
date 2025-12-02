@@ -2,10 +2,10 @@ import heapq
 import random
 from collections import deque
 
-
 class SearchAlgorithms:
     """
-    Algoritmos de busca puros.
+    Algoritmos de busca puros (BFS, DFS, A*).
+    Operam sobre o 'mapa mental' (Knowledge Base) do agente.
     """
 
     @staticmethod
@@ -22,9 +22,10 @@ class SearchAlgorithms:
 
     @staticmethod
     def get_neighbors(pos, rows, cols):
+        """Retorna vizinhos válidos embaralhados para garantir variedade."""
         r, c = pos
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        random.shuffle(directions)  # Garante variedade em empates
+        random.shuffle(directions)
 
         result = []
         for dr, dc in directions:
@@ -35,20 +36,21 @@ class SearchAlgorithms:
 
     @staticmethod
     def is_walkable(pos, knowledge_base, safe_only):
-        """Define se o algoritmo tem permissão para pisar nesta célula."""
+        """
+        Define se o algoritmo tem permissão para pisar nesta célula.
+        safe_only=True: Apenas SAFE.
+        safe_only=False: SAFE e CAUTION (Arriscar).
+        """
         r, c = pos
         status = knowledge_base[r][c]
 
-        # Paredes/Obstáculos conhecidos são sempre proibidos
         if status == 'UNSAFE':
             return False
 
-        # Se safe_only=True, só pode andar no SAFE.
-        # Se safe_only=False, pode andar no SAFE e no CAUTION (arriscar).
         if safe_only:
             return status == 'SAFE'
         else:
-            return True  # Aceita SAFE, CAUTION e UNKNOWN
+            return True
 
     # ------------------------------------------------------------
     #                   B F S
@@ -110,7 +112,7 @@ class SearchAlgorithms:
     @staticmethod
     def a_star(start, goal, kb, rows, cols, safe_only=False):
         pq = []
-        # Random no custo inicial para desempatar caminhos iguais
+        # Random no custo inicial para desempatar
         heapq.heappush(pq, (0 + random.random(), start))
 
         came_from = {}
@@ -132,13 +134,10 @@ class SearchAlgorithms:
                 if not SearchAlgorithms.is_walkable(neighbor, kb, safe_only):
                     continue
 
-                # Custo dinâmico:
-                # Se safe_only=True, ele nem entra aqui se for CAUTION.
-                # Se safe_only=False, cobramos caro pelo risco.
                 status = kb[neighbor[0]][neighbor[1]]
                 move_cost = 1
                 if status == 'CAUTION':
-                    move_cost = 20  # Penalidade alta para evitar risco desnecessário
+                    move_cost = 20  # Custo alto para risco
 
                 tentative_g = g_score[current] + move_cost
 
@@ -146,7 +145,7 @@ class SearchAlgorithms:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g
                     f = tentative_g + SearchAlgorithms.heuristic(neighbor, goal)
-                    # Adiciona ruído para evitar vício de caminho
+                    # Adiciona ruído
                     heapq.heappush(pq, (f + random.uniform(0, 0.5), neighbor))
 
         return [], nodes_expanded

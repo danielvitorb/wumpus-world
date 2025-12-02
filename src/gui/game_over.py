@@ -1,18 +1,19 @@
+# src/gui/game_over.py
+
 import pygame
 import sys
+from src.utils.constants import WHITE, BLACK, GREEN, RED, BLUE
 
-# Cores
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GREEN = (34, 139, 34)
-RED = (178, 34, 34)
-BLUE = (70, 130, 180)
-GRAY = (200, 200, 200)
-
+# Dimensões específicas para a tela de relatório (para caber o texto confortavelmente)
 WIDTH, HEIGHT = 500, 450
 
 
 class GameOverScreen:
+    """
+    Tela de relatório final.
+    Exibe o resultado (Vitória/Derrota) e as métricas coletadas pelo agente.
+    """
+
     def __init__(self, metrics):
         """
         metrics: dicionário contendo:
@@ -53,8 +54,13 @@ class GameOverScreen:
             self.screen.fill(WHITE)
 
             # 1. Título (Vitória ou Derrota)
-            titulo = "MISSÃO CUMPRIDA!" if self.metrics['resultado'] == "VITÓRIA" else "FIM DE JOGO"
-            cor_titulo = GREEN if self.metrics['resultado'] == "VITÓRIA" else RED
+            if self.metrics['resultado'] == "VITÓRIA":
+                titulo = "MISSÃO CUMPRIDA!"
+                cor_titulo = GREEN
+            else:
+                titulo = "FIM DE JOGO"
+                cor_titulo = RED
+
             self.draw_text(titulo, self.title_font, cor_titulo, 50)
 
             # 2. Métricas
@@ -67,8 +73,11 @@ class GameOverScreen:
 
             start_y = 120
             for i, info in enumerate(infos):
-                # Desenha uma caixa cinza de fundo para cada linha
-                pygame.draw.rect(self.screen, (240, 240, 240), (50, start_y + (i * 40) - 10, 400, 35), border_radius=5)
+                # Desenha uma caixa cinza clara de fundo para cada linha
+                # Usamos um cinza bem claro (hardcoded aqui pois é apenas visual de fundo)
+                bg_rect = pygame.Rect(50, start_y + (i * 40) - 10, 400, 35)
+                pygame.draw.rect(self.screen, (240, 240, 240), bg_rect, border_radius=5)
+
                 self.draw_text(info, self.text_font, BLACK, start_y + (i * 40))
 
             # 3. Instrução Final

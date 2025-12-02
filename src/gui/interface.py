@@ -1,22 +1,19 @@
 import pygame
 import sys
 import time
-from gui.asset_loader import load_all_assets, CELL_SIZE, ASSET_PATHS
-from core.environment import WumpusEnvironment
-from agent.player import Agent
-from gui.game_over import GameOverScreen
 
-HUD_HEIGHT = 100
-ROWS, COLS = 4, 4
-WIDTH = COLS * CELL_SIZE
-HEIGHT = (ROWS * CELL_SIZE) + HUD_HEIGHT
+# --- IMPORTS DA NOVA ESTRUTURA ---
+from src.gui.asset_loader import load_all_assets, ASSET_PATHS
+from src.core.environment import WumpusEnvironment
+from src.agent.player import Agent
+from src.gui.game_over import GameOverScreen
 
-# Cores
-WHITE = (255, 255, 255)
-GRAY = (50, 50, 50)
-BG_COLOR = (20, 20, 20)
-TEXT_COLOR = (255, 255, 255)
-PERCEPTION_COLOR = (255, 255, 0)
+# Importamos TUDO de constants.py para limpar este arquivo
+from src.utils.constants import (
+    CELL_SIZE, ROWS, COLS, WIDTH, HEIGHT, HUD_HEIGHT,
+    WHITE, GRAY, BG_COLOR, TEXT_COLOR, PERCEPTION_COLOR,
+    MOVE_DELAY
+)
 
 
 class MundoWumpusGUI:
@@ -25,9 +22,9 @@ class MundoWumpusGUI:
 
         pygame.init()
         pygame.font.init()
-        # Inicializa o mixer com canais suficientes
         pygame.mixer.init(frequency=44100, size=-16, channels=8, buffer=2048)
 
+        # Usa as dimensões importadas de constants.py
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption(f"Wumpus World AI - {search_method.upper()}")
 
@@ -37,24 +34,23 @@ class MundoWumpusGUI:
         print("Carregando assets...")
         self.images = load_all_assets()
 
-        # --- CARREGAMENTO DE EFEITOS SONOROS ---
+        # --- ÁUDIO ---
         self.sfx = {}
         try:
             self.sfx['gold'] = pygame.mixer.Sound(ASSET_PATHS["SND_GOLD"])
             self.sfx['breeze'] = pygame.mixer.Sound(ASSET_PATHS["SND_BREEZE"])
             self.sfx['stench'] = pygame.mixer.Sound(ASSET_PATHS["SND_STENCH"])
-            # Ajuste de volume (opcional, 0.0 a 1.0)
             self.sfx['breeze'].set_volume(0.5)
             self.sfx['stench'].set_volume(0.5)
         except Exception as e:
             print(f"Erro ao carregar sons: {e}")
 
-        # Variáveis de Estado de Áudio (para evitar reiniciar o som a cada frame)
         self.is_playing_breeze = False
         self.is_playing_stench = False
         self.gold_sound_played = False
         self.victory_music_started = False
 
+        # Inicializa Ambiente e Agente
         self.world = WumpusEnvironment()
         self.agent = Agent(self.world)
 
@@ -62,37 +58,31 @@ class MundoWumpusGUI:
 
         # Controle de Tempo
         self.last_move_time = pygame.time.get_ticks()
-        self.move_delay = 2000  # 1 segundo entre passos
+        self.move_delay = MOVE_DELAY  # Usa o valor centralizado (1000ms)
 
         self.start_time = time.time()
         self.end_time = None
 
     def process_audio(self):
-        """Gerencia qual som deve tocar baseado no estado atual do agente."""
-
-        # Se o jogo acabou, paramos os sons ambientes imediatamente
+        """Gerencia os sons baseado nas percepções."""
         if self.agent.game_over:
-            if self.is_playing_breeze:
-                self.sfx['breeze'].stop()
-            if self.is_playing_stench:
-                self.sfx['stench'].stop()
+            if self.is_playing_breeze: self.sfx['breeze'].stop()
+            if self.is_playing_stench: self.sfx['stench'].stop()
             return
 
-        # 1. Pega percepções do local atual
-        # Usamos o grid lógico e não apenas a memória do agente para o som ser responsivo
         percepts = self.world.get_percepts(self.agent.pos)
 
-        # --- LÓGICA DA BRISA (LOOP) ---
+        # Brisa
         if "Brisa" in percepts:
             if not self.is_playing_breeze:
-                self.sfx['breeze'].play(loops=-1)  # -1 = Loop infinito
+                self.sfx['breeze'].play(loops=-1)
                 self.is_playing_breeze = True
         else:
             if self.is_playing_breeze:
                 self.sfx['breeze'].stop()
                 self.is_playing_breeze = False
 
-        # --- LÓGICA DO FEDOR (LOOP) ---
+        # Fedor
         if "Fedor" in percepts:
             if not self.is_playing_stench:
                 self.sfx['stench'].play(loops=-1)
@@ -102,10 +92,9 @@ class MundoWumpusGUI:
                 self.sfx['stench'].stop()
                 self.is_playing_stench = False
 
-        # --- LÓGICA DO OURO (ONE-SHOT) ---
-        # Se o agente tem ouro, mas ainda não tocamos o som...
+        # Ouro
         if self.agent.has_gold and not self.gold_sound_played:
-            self.sfx['gold'].play()  # Toca uma vez
+            self.sfx['gold'].play()
             self.gold_sound_played = True
 
     def draw_cell(self, r, c):
@@ -113,11 +102,13 @@ class MundoWumpusGUI:
         y = r * CELL_SIZE
         rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
 
+        # Chão
         self.screen.blit(self.images["GROUND"], (x, y))
 
         is_visited = (r, c) in self.agent.visited
-
         element = self.world.grid[r][c]
+
+        # Elementos (Poço, Ouro, Wumpus)
         if element == 'P':
             self.screen.blit(self.images["PIT"], (x, y))
         elif element == 'G' and not self.agent.has_gold:
@@ -125,6 +116,7 @@ class MundoWumpusGUI:
         elif element == 'W':
             self.screen.blit(self.images["WUMPUS"], (x, y))
 
+        # Nevoa (Fog of War)
         if not is_visited:
             if "UNEXPLORED" in self.images:
                 self.screen.blit(self.images["UNEXPLORED"], (x, y))
@@ -134,6 +126,7 @@ class MundoWumpusGUI:
                 s.fill((0, 0, 0))
                 self.screen.blit(s, (x, y))
 
+        # Agente
         if (r, c) == self.agent.pos:
             key = f"AGENT_{self.agent_direction}"
             if key in self.images:
@@ -141,6 +134,7 @@ class MundoWumpusGUI:
             else:
                 self.screen.blit(self.images["AGENT"], (x, y))
 
+        # Percepções (Texto)
         if is_visited:
             percepts = self.world.get_percepts((r, c))
             if self.agent.has_gold and "Brilho" in percepts:
@@ -154,6 +148,7 @@ class MundoWumpusGUI:
                 self.screen.blit(txt_shadow, (x + 7, y_start + idx * line_h + 1))
                 self.screen.blit(txt, (x + 6, y_start + idx * line_h))
 
+        # Borda da célula
         pygame.draw.rect(self.screen, GRAY, rect, 1)
 
     def draw_hud(self):
@@ -193,11 +188,9 @@ class MundoWumpusGUI:
                 if event.type == pygame.QUIT:
                     running = False
 
-            # --- PROCESSAMENTO DE ÁUDIO ---
-            # Chamamos nossa função gerenciadora a cada frame
             self.process_audio()
 
-            # Lógica da IA
+            # Lógica da IA (Temporizada)
             current_time = pygame.time.get_ticks()
             if not self.agent.game_over:
                 if current_time - self.last_move_time > self.move_delay:
@@ -207,23 +200,17 @@ class MundoWumpusGUI:
                         self.update_direction(move_action)
                     self.last_move_time = current_time
             else:
-                # JOGO ACABOU!
-
-                # --- LÓGICA DE VITÓRIA ---
+                # Fim de Jogo
                 if self.agent.won and not self.victory_music_started:
-                    # Para a música de fundo
                     pygame.mixer.music.stop()
-                    # Toca a música de vitória (como nova música de fundo)
                     try:
                         victory_path = ASSET_PATHS["SND_VICTORY"]
                         pygame.mixer.music.load(victory_path)
-                        pygame.mixer.music.play(-1)  # Loop até fechar
+                        pygame.mixer.music.play(-1)
                     except Exception as e:
                         print(f"Erro ao tocar vitória: {e}")
-
                     self.victory_music_started = True
 
-                # Espera um pouco antes de mostrar a tela final, para curtir a vitória
                 pygame.time.delay(1000)
 
                 if self.end_time is None:

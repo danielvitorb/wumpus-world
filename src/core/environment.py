@@ -1,3 +1,6 @@
+from src.utils.constants import ROWS, COLS
+
+
 class WumpusEnvironment:
     def __init__(self, layout=None):
         """
@@ -6,12 +9,15 @@ class WumpusEnvironment:
                        Strings aceitas: 'P' (Poço), 'W' (Wumpus), 'G' (Ouro), '.' (Vazio), 'A' (Agente)
         """
         self.grid = []
-        self.rows = 4
-        self.cols = 4
+        # Agora usamos as constantes globais em vez de números fixos
+        self.rows = ROWS
+        self.cols = COLS
+
         self.agent_pos = (3, 0)  # Padrão: Canto inferior esquerdo
         self.gold_pos = None
         self.wumpus_pos = None
         self.pits = []
+
         self.game_over = False
         self.won = False
         self.message = ""
@@ -23,15 +29,14 @@ class WumpusEnvironment:
             self.load_default_map()
 
     def load_default_map(self):
-        # Mapa padrão para testes (igual ao que você tinha na interface)
-        # '.' = Vazio, 'P' = Poço, 'W' = Wumpus, 'G' = Ouro
+        # Mapa padrão para testes
+        # Nota: Se mudar ROWS/COLS em constants.py, precisará ajustar este mapa também!
         self.grid = [
             ['.', '.', '.', 'P'],
             ['W', 'G', 'P', '.'],
             ['.', '.', '.', '.'],
             ['.', '.', 'P', '.']
         ]
-        # Atualiza as listas de posições baseadas no grid acima
         self.scan_grid()
 
     def load_custom_map(self, layout):
@@ -65,31 +70,25 @@ class WumpusEnvironment:
     def get_adjacents(self, r, c):
         """Retorna lista de coordenadas vizinhas válidas (Cima, Baixo, Esq, Dir)."""
         adj = []
-        # Cima
         if r > 0: adj.append((r - 1, c))
-        # Baixo
         if r < self.rows - 1: adj.append((r + 1, c))
-        # Esquerda
         if c > 0: adj.append((r, c - 1))
-        # Direita
         if c < self.cols - 1: adj.append((r, c + 1))
         return adj
 
     def get_percepts(self, pos):
         """
         O ORÁCULO: Retorna o que o agente sente na posição atual.
-        Essa é a função mais importante para a IA.
         """
         r, c = pos
-        percepts = set()  # Usamos set para evitar duplicatas
+        percepts = set()
 
-        # 1. Verifica se está na posição do Ouro
+        # 1. Verifica Ouro
         if self.grid[r][c] == 'G':
             percepts.add("Brilho")
 
-        # 2. Verifica vizinhos para Brisa e Fedor
+        # 2. Verifica vizinhos (Brisa, Fedor)
         adjacentes = self.get_adjacents(r, c)
-
         for (nr, nc) in adjacentes:
             vizinho = self.grid[nr][nc]
             if vizinho == 'P':
@@ -97,14 +96,11 @@ class WumpusEnvironment:
             elif vizinho == 'W':
                 percepts.add("Fedor")
 
-        # Converte para lista e ordena para ficar bonito na interface
         return sorted(list(percepts))
 
     def step(self, action):
         """
-        Executa um movimento.
-        Action: Tupla (delta_row, delta_col) ex: (-1, 0) para subir.
-        Retorna: (nova_pos, percepts, game_over)
+        Executa um movimento e retorna (nova_pos, percepts, game_over).
         """
         if self.game_over:
             return self.agent_pos, [], True
@@ -112,15 +108,14 @@ class WumpusEnvironment:
         dr, dc = action
         nr, nc = self.agent_pos[0] + dr, self.agent_pos[1] + dc
 
-        # 1. Verifica Paredes (Limites do Grid)
+        # 1. Verifica Paredes
         if not (0 <= nr < self.rows and 0 <= nc < self.cols):
             return self.agent_pos, ["Batida"], False
 
-            # 2. Move o agente
+        # 2. Move o agente
         self.agent_pos = (nr, nc)
         current_cell = self.grid[nr][nc]
 
-        # Gera percepções ANTES de modificar o grid (para sentir o brilho dessa vez)
         percepts = self.get_percepts((nr, nc))
 
         # 3. Verifica interações
@@ -132,5 +127,7 @@ class WumpusEnvironment:
             self.game_over = True
         elif current_cell == 'G':
             self.message = "Achou o Ouro!"
+            # Mantemos o ouro no grid lógico para o agente continuar sentindo "Brilho"
+            # A interface é que vai esconder a imagem.
 
         return self.agent_pos, percepts, self.game_over
