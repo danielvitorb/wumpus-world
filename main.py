@@ -12,7 +12,7 @@ def main():
     music_path = ASSET_PATHS.get("BG_MUSIC")
 
     pygame.mixer.music.load(music_path)
-    pygame.mixer.music.play(-1)  # Loop infinito
+    pygame.mixer.music.play(-1)
 
     menu = StartMenu()
 

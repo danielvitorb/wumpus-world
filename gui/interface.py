@@ -1,16 +1,17 @@
 import pygame
 import sys
 import time
-from gui.asset_loader import load_all_assets, CELL_SIZE
+from gui.asset_loader import load_all_assets, CELL_SIZE, ASSET_PATHS
 from core.environment import WumpusEnvironment
 from agent.player import Agent
-from gui.game_over import GameOverScreen  # Importa a nova tela
+from gui.game_over import GameOverScreen
 
 HUD_HEIGHT = 100
 ROWS, COLS = 4, 4
 WIDTH = COLS * CELL_SIZE
 HEIGHT = (ROWS * CELL_SIZE) + HUD_HEIGHT
 
+# Cores
 WHITE = (255, 255, 255)
 GRAY = (50, 50, 50)
 BG_COLOR = (20, 20, 20)
@@ -24,6 +25,9 @@ class MundoWumpusGUI:
 
         pygame.init()
         pygame.font.init()
+        # Inicializa o mixer com canais suficientes
+        pygame.mixer.init(frequency=44100, size=-16, channels=8, buffer=2048)
+
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption(f"Wumpus World AI - {search_method.upper()}")
 
@@ -33,18 +37,76 @@ class MundoWumpusGUI:
         print("Carregando assets...")
         self.images = load_all_assets()
 
+        # --- CARREGAMENTO DE EFEITOS SONOROS ---
+        self.sfx = {}
+        try:
+            self.sfx['gold'] = pygame.mixer.Sound(ASSET_PATHS["SND_GOLD"])
+            self.sfx['breeze'] = pygame.mixer.Sound(ASSET_PATHS["SND_BREEZE"])
+            self.sfx['stench'] = pygame.mixer.Sound(ASSET_PATHS["SND_STENCH"])
+            # Ajuste de volume (opcional, 0.0 a 1.0)
+            self.sfx['breeze'].set_volume(0.5)
+            self.sfx['stench'].set_volume(0.5)
+        except Exception as e:
+            print(f"Erro ao carregar sons: {e}")
+
+        # Variáveis de Estado de Áudio (para evitar reiniciar o som a cada frame)
+        self.is_playing_breeze = False
+        self.is_playing_stench = False
+        self.gold_sound_played = False
+        self.victory_music_started = False
+
         self.world = WumpusEnvironment()
         self.agent = Agent(self.world)
 
         self.agent_direction = "UP"
 
-        # Controle de Tempo e Animação
+        # Controle de Tempo
         self.last_move_time = pygame.time.get_ticks()
-        self.move_delay = 1000
+        self.move_delay = 2000  # 1 segundo entre passos
 
-        # Para calcular métrica de tempo total
         self.start_time = time.time()
         self.end_time = None
+
+    def process_audio(self):
+        """Gerencia qual som deve tocar baseado no estado atual do agente."""
+
+        # Se o jogo acabou, paramos os sons ambientes imediatamente
+        if self.agent.game_over:
+            if self.is_playing_breeze:
+                self.sfx['breeze'].stop()
+            if self.is_playing_stench:
+                self.sfx['stench'].stop()
+            return
+
+        # 1. Pega percepções do local atual
+        # Usamos o grid lógico e não apenas a memória do agente para o som ser responsivo
+        percepts = self.world.get_percepts(self.agent.pos)
+
+        # --- LÓGICA DA BRISA (LOOP) ---
+        if "Brisa" in percepts:
+            if not self.is_playing_breeze:
+                self.sfx['breeze'].play(loops=-1)  # -1 = Loop infinito
+                self.is_playing_breeze = True
+        else:
+            if self.is_playing_breeze:
+                self.sfx['breeze'].stop()
+                self.is_playing_breeze = False
+
+        # --- LÓGICA DO FEDOR (LOOP) ---
+        if "Fedor" in percepts:
+            if not self.is_playing_stench:
+                self.sfx['stench'].play(loops=-1)
+                self.is_playing_stench = True
+        else:
+            if self.is_playing_stench:
+                self.sfx['stench'].stop()
+                self.is_playing_stench = False
+
+        # --- LÓGICA DO OURO (ONE-SHOT) ---
+        # Se o agente tem ouro, mas ainda não tocamos o som...
+        if self.agent.has_gold and not self.gold_sound_played:
+            self.sfx['gold'].play()  # Toca uma vez
+            self.gold_sound_played = True
 
     def draw_cell(self, r, c):
         x = c * CELL_SIZE
@@ -107,7 +169,6 @@ class MundoWumpusGUI:
         surf2 = self.font_info.render(info_txt, True, TEXT_COLOR)
         self.screen.blit(surf2, (10, base_y + 35))
 
-        # Mostra métricas em tempo real também
         metrics_txt = f"Nós: {self.agent.total_nodes} | Passos: {self.agent.total_steps}"
         surf3 = self.font_info.render(metrics_txt, True, (200, 200, 200))
         self.screen.blit(surf3, (10, base_y + 65))
@@ -132,6 +193,10 @@ class MundoWumpusGUI:
                 if event.type == pygame.QUIT:
                     running = False
 
+            # --- PROCESSAMENTO DE ÁUDIO ---
+            # Chamamos nossa função gerenciadora a cada frame
+            self.process_audio()
+
             # Lógica da IA
             current_time = pygame.time.get_ticks()
             if not self.agent.game_over:
@@ -143,16 +208,29 @@ class MundoWumpusGUI:
                     self.last_move_time = current_time
             else:
                 # JOGO ACABOU!
-                # Espera 1 segundo para o usuário ler a mensagem de status e depois muda de tela
+
+                # --- LÓGICA DE VITÓRIA ---
+                if self.agent.won and not self.victory_music_started:
+                    # Para a música de fundo
+                    pygame.mixer.music.stop()
+                    # Toca a música de vitória (como nova música de fundo)
+                    try:
+                        victory_path = ASSET_PATHS["SND_VICTORY"]
+                        pygame.mixer.music.load(victory_path)
+                        pygame.mixer.music.play(-1)  # Loop até fechar
+                    except Exception as e:
+                        print(f"Erro ao tocar vitória: {e}")
+
+                    self.victory_music_started = True
+
+                # Espera um pouco antes de mostrar a tela final, para curtir a vitória
                 pygame.time.delay(1000)
 
-                # Calcula tempo final
                 if self.end_time is None:
                     self.end_time = time.time()
 
                 duration = self.end_time - self.start_time
 
-                # Prepara dados para a tela final
                 metrics = {
                     "resultado": "VITÓRIA" if self.agent.won else "DERROTA",
                     "metodo": self.search_method.upper(),
@@ -161,10 +239,9 @@ class MundoWumpusGUI:
                     "tempo": f"{duration:.2f}s"
                 }
 
-                # Abre tela de game over
                 screen_over = GameOverScreen(metrics)
                 screen_over.run()
-                return  # Encerra o jogo
+                return
 
             self.screen.fill(BG_COLOR)
             for r in range(ROWS):
