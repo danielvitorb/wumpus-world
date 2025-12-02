@@ -9,7 +9,6 @@ class Agent:
         self.cols = world.cols
         self.pos = (3, 0)
 
-        # KB: 'UNKNOWN', 'SAFE', 'CAUTION', 'UNSAFE'
         self.kb = [['UNKNOWN' for _ in range(self.cols)] for _ in range(self.rows)]
         self.kb[self.pos[0]][self.pos[1]] = 'SAFE'
 
@@ -18,7 +17,12 @@ class Agent:
         self.path_queue = []
         self.has_gold = False
         self.game_over = False
+        self.won = False  # Nova flag para saber se venceu ou morreu
         self.message = "Explorando..."
+
+        # --- NOVAS MÉTRICAS ---
+        self.total_nodes = 0  # Soma de todos os nós de todas as buscas
+        self.total_steps = 0  # Quantos passos o agente deu no total
 
     def get_valid_neighbors(self, pos):
         r, c = pos
@@ -30,50 +34,34 @@ class Agent:
         return neighs
 
     def infer_knowledge(self, percepts):
-        """Atualiza a base de conhecimento."""
         is_safe_zone = "Brisa" not in percepts and "Fedor" not in percepts
-
         neighbors = self.get_valid_neighbors(self.pos)
         for nr, nc in neighbors:
             current = self.kb[nr][nc]
-
-            # O que é certo, não muda
-            if current in ['SAFE', 'UNSAFE']:
-                continue
-
+            if current in ['SAFE', 'UNSAFE']: continue
             if is_safe_zone:
                 self.kb[nr][nc] = 'SAFE'
             else:
-                if current == 'UNKNOWN':
-                    self.kb[nr][nc] = 'CAUTION'
+                if current == 'UNKNOWN': self.kb[nr][nc] = 'CAUTION'
 
     def find_target(self):
-        """
-        Define o objetivo.
-        Retorna: (target_pos, must_be_safe)
-        - must_be_safe=True: Só aceita caminho limpo.
-        - must_be_safe=False: Aceita risco.
-        """
-
-        # 1. Se tem Ouro -> Voltar para o início (PRIORIDADE MÁXIMA)
+        # 1. Prioridade: Voltar para casa com o ouro
         if self.has_gold:
-            return (3, 0), True  # Tenta voltar só pelo seguro primeiro
+            return (3, 0), True
 
-        # 2. Se não tem Ouro -> Procurar célula SAFE não visitada
+            # 2. Explorar SAFE
         target = self.bfs_find_nearest('SAFE')
-        if target:
-            return target, True  # Caminho seguro até a fronteira segura
+        if target: return target, True
 
-        # 3. Se acabou o SAFE -> Arriscar em CAUTION
+        # 3. Explorar CAUTION
         target = self.bfs_find_nearest('CAUTION')
         if target:
-            self.message = "Sem opções seguras. Arriscando..."
-            return target, False  # Permite risco
+            self.message = "Arriscando..."
+            return target, False
 
         return None, True
 
     def bfs_find_nearest(self, type_target):
-        """Busca BFS simples apenas para achar a coordenada do objetivo mais próximo."""
         queue = deque([self.pos])
         seen = {self.pos}
         while queue:
@@ -89,37 +77,39 @@ class Agent:
     def think(self, algorithm_name="A*"):
         if self.game_over: return
 
-        # 1. Perceber
+        # Checagem de VITÓRIA IMEDIATA (Antes de tentar calcular rota)
+        if self.has_gold and self.pos == (3, 0):
+            self.message = "VITÓRIA! Ouro entregue em segurança."
+            self.game_over = True
+            self.won = True
+            return
+
         percepts = self.world.get_percepts(self.pos)
         if "Brilho" in percepts:
             self.has_gold = True
-            self.message = "OURO! Voltando para casa..."
+            self.message = "OURO! Voltando..."
             self.path_queue = []
 
-            # 2. Raciocinar
         self.infer_knowledge(percepts)
 
-        # 3. Reação a Perigo (Interrupção de Caminho)
-        # Se eu estava seguindo um plano e senti perigo, paro para reavaliar.
         if (("Brisa" in percepts or "Fedor" in percepts) and self.path_queue):
-            # Mas só paro se o próximo passo for desconhecido/perigoso.
-            # Se o próximo passo é SAFE (ex: voltando pra trás), continuo.
             next_step = self.path_queue[0]
             if self.kb[next_step[0]][next_step[1]] != 'SAFE':
                 self.path_queue = []
-                self.message = "Perigo detectado! Reavaliando..."
+                self.message = "Perigo! Recalculando..."
 
-        # 4. Planejar (Se precisar)
         if not self.path_queue:
             target, safe_only = self.find_target()
 
-            # Se tenho ouro e não achei caminho seguro, tento caminho arriscado
             if self.has_gold and not target:
                 target = (3, 0)
                 safe_only = False
 
+                # Correção do Bug: Se eu JÁ ESTOU no alvo, não chamo a busca
+            if target == self.pos:
+                return
+
             if target:
-                # Chama o algoritmo genérico
                 args = (self.pos, target, self.kb, self.rows, self.cols, safe_only)
 
                 if algorithm_name == "bfs":
@@ -129,10 +119,8 @@ class Agent:
                 else:
                     path, nodes = SearchAlgorithms.a_star(*args)
 
-                # Se falhou em achar caminho seguro, e é permitido arriscar, tenta de novo sem filtro
                 if not path and safe_only:
-                    self.message = "Caminho seguro bloqueado. Tentando risco..."
-                    # Tenta de novo com safe_only=False
+                    self.message = "Sem rota segura. Tentando risco..."
                     args = (self.pos, target, self.kb, self.rows, self.cols, False)
                     if algorithm_name == "bfs":
                         path, nodes = SearchAlgorithms.bfs(*args)
@@ -141,18 +129,17 @@ class Agent:
                     else:
                         path, nodes = SearchAlgorithms.a_star(*args)
 
+                # ACUMULA AS MÉTRICAS
+                self.total_nodes += nodes
+
                 if path:
                     self.path_queue = path
                     modo = "SEGURO" if safe_only else "ARRISCADO"
                     self.message = f"Indo p/ {target} ({modo}). Nós: {nodes}"
                 else:
-                    self.message = "TRAVADO! Sem caminho possível."
+                    self.message = "TRAVADO! Sem caminho."
             else:
-                if self.has_gold and self.pos == (3, 0):
-                    self.message = "VITÓRIA! Ouro entregue."
-                    self.game_over = True
-                else:
-                    self.message = "Exploração Finalizada."
+                self.message = "Exploração Finalizada."
 
     def move(self):
         if self.path_queue and not self.game_over:
@@ -165,11 +152,13 @@ class Agent:
 
             self.pos = new_pos
             self.visited.add(self.pos)
+            self.total_steps += 1  # Contabiliza o passo dado
 
             if not dead:
                 self.kb[self.pos[0]][self.pos[1]] = 'SAFE'
             else:
                 self.game_over = True
+                self.won = False
                 self.kb[self.pos[0]][self.pos[1]] = 'UNSAFE'
                 self.message = "MORREU NO CAMINHO!"
 

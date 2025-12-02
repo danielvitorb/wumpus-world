@@ -1,7 +1,7 @@
 import pygame
 import os
 from gui.interface import MundoWumpusGUI
-from start_menu import StartMenu
+from gui.start_menu import StartMenu
 from gui.asset_loader import ASSET_PATHS
 
 
