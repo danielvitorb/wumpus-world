@@ -6,7 +6,7 @@ from agent.player import Agent
 
 # Configurações de Tela
 # Vamos dar um espaço extra na altura para o texto de status
-HUD_HEIGHT = 100
+HUD_HEIGHT = 60
 ROWS, COLS = 4, 4
 WIDTH = COLS * CELL_SIZE
 HEIGHT = (ROWS * CELL_SIZE) + HUD_HEIGHT
@@ -45,7 +45,7 @@ class MundoWumpusGUI:
 
         # 2. Aumentamos o delay para 800ms (quase 1 segundo por passo)
         # Se quiser ainda mais lento, coloque 1000 ou 1200
-        self.move_delay = 5000
+        self.move_delay = 2000
 
     # -------------------------------------------------------
     # DESENHO
@@ -126,13 +126,6 @@ class MundoWumpusGUI:
         info_txt = f"Posição: {self.agent.pos} | Tem Ouro? {gold_txt}"
         surf2 = self.font_info.render(info_txt, True, TEXT_COLOR)
         self.screen.blit(surf2, (10, base_y + 35))
-
-        # Linha 3: Instrução
-        inst_txt = "O jogo roda automaticamente..."
-        if self.agent.game_over:
-            inst_txt = "FIM DE JOGO! Feche a janela para sair."
-        surf3 = self.font_info.render(inst_txt, True, (150, 150, 150))
-        self.screen.blit(surf3, (10, base_y + 65))
 
     def update_direction(self, move_action):
         """Atualiza a variável de direção baseada no movimento (dr, dc)."""
