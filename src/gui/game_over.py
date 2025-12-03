@@ -49,7 +49,7 @@ class GameOverScreen:
 
                 # Se clicar em qualquer lugar ou apertar tecla, fecha o jogo
                 if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                    return  # Retorna para fechar o programa principal
+                    return
 
             self.screen.fill(WHITE)
 
@@ -73,8 +73,6 @@ class GameOverScreen:
 
             start_y = 120
             for i, info in enumerate(infos):
-                # Desenha uma caixa cinza clara de fundo para cada linha
-                # Usamos um cinza bem claro (hardcoded aqui pois é apenas visual de fundo)
                 bg_rect = pygame.Rect(50, start_y + (i * 40) - 10, 400, 35)
                 pygame.draw.rect(self.screen, (240, 240, 240), bg_rect, border_radius=5)
 

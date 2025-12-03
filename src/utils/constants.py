@@ -23,4 +23,4 @@ BLUE = (70, 130, 180)
 LIGHT_GRAY = (200, 200, 200)
 
 # --- CONFIGURAÇÕES DE JOGO ---
-MOVE_DELAY = 5000 # Tempo entre movimentos (ms)
+MOVE_DELAY = 2000 # Tempo entre movimentos (ms)

@@ -1,9 +1,6 @@
 import pygame
 import sys
 import os
-
-# --- IMPORTS DA NOVA ESTRUTURA (SRC) ---
-# O Python precisa saber que os arquivos estão dentro da pasta 'src'
 from src.gui.start_menu import StartMenu
 from src.gui.interface import MundoWumpusGUI
 from src.gui.asset_loader import ASSET_PATHS
@@ -23,8 +20,7 @@ def main():
     if music_path and os.path.exists(music_path):
         try:
             pygame.mixer.music.load(music_path)
-            pygame.mixer.music.play(-1)  # -1 = Loop infinito
-            print(f"Tocando trilha sonora: {music_path}")
+            pygame.mixer.music.play(-1)
         except Exception as e:
             print(f"Erro ao carregar música: {e}")
     else:
@@ -43,8 +39,6 @@ def main():
         pygame.quit()
         sys.exit()
 
-    print(f"Método escolhido: {search_method.upper()}")
-
     # -------------------------------------------------------
     # 3. JOGO PRINCIPAL
     # -------------------------------------------------------
@@ -52,9 +46,6 @@ def main():
     app = MundoWumpusGUI(search_method)
     app.run()
 
-    # -------------------------------------------------------
-    # 4. LIMPEZA FINAL
-    # -------------------------------------------------------
     pygame.mixer.music.stop()
     pygame.quit()
     sys.exit()
