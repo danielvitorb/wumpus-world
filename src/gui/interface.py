@@ -7,8 +7,8 @@ from src.agent.player import Agent
 from src.gui.game_over import GameOverScreen
 from src.utils.constants import (
     CELL_SIZE, ROWS, COLS, WIDTH, HEIGHT, HUD_HEIGHT,
-    WHITE, GRAY, BG_COLOR, TEXT_COLOR, PERCEPTION_COLOR,
-    MOVE_DELAY
+    GRAY, BG_COLOR, TEXT_COLOR, PERCEPTION_COLOR,
+    MOVE_DELAY, BLACK
 )
 
 
@@ -43,13 +43,11 @@ class MundoWumpusGUI:
         self.gold_sound_played = False
         self.victory_music_started = False
 
-        # Inicializa Ambiente e Agente
         self.world = WumpusEnvironment()
         self.agent = Agent(self.world)
 
         self.agent_direction = "UP"
 
-        # Controle de Tempo
         self.last_move_time = pygame.time.get_ticks()
         self.move_delay = MOVE_DELAY
 
@@ -91,6 +89,8 @@ class MundoWumpusGUI:
             self.gold_sound_played = True
 
     def draw_cell(self, r, c):
+        """"Desenha todas as células"""
+
         x = c * CELL_SIZE
         y = r * CELL_SIZE
         rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
@@ -108,6 +108,13 @@ class MundoWumpusGUI:
             self.screen.blit(self.images["GOLD"], (x, y))
         elif element == 'W':
             self.screen.blit(self.images["WUMPUS"], (x, y))
+
+        if (r, c) == (3, 0):
+            start_font_size = 20
+            start_font = pygame.font.SysFont("arial", start_font_size, bold=True)
+            lbl_start = start_font.render("START", True, BLACK)
+            lbl_rect = lbl_start.get_rect(center=(x + CELL_SIZE // 2, y + CELL_SIZE - 10))
+            self.screen.blit(lbl_start, lbl_rect)
 
         # Nevoa (Fog of War)
         if not is_visited:

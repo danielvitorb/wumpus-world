@@ -7,9 +7,7 @@ from src.gui.asset_loader import ASSET_PATHS
 
 
 def main():
-    # Inicializa Pygame e o Mixer de Áudio
     pygame.init()
-    # Configuração de áudio para evitar atrasos (latency) e "chiados"
     pygame.mixer.init(frequency=44100, size=-16, channels=8, buffer=2048)
 
     # -------------------------------------------------------
