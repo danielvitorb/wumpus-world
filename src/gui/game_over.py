@@ -12,20 +12,11 @@ class GameOverScreen:
     """
 
     def __init__(self, metrics):
-        """
-        metrics: dicionário contendo:
-        - 'resultado': 'VITÓRIA' ou 'DERROTA'
-        - 'metodo': 'BFS', 'A*', etc.
-        - 'nos': int
-        - 'custo': int (passos)
-        - 'tempo': string (ex: "12.5s")
-        """
         self.metrics = metrics
         pygame.init()
         pygame.display.set_caption("Fim de Jogo")
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-        # Fontes
         self.title_font = pygame.font.SysFont("arial", 40, bold=True)
         self.text_font = pygame.font.SysFont("arial", 22)
         self.btn_font = pygame.font.SysFont("arial", 20, bold=True)
@@ -50,7 +41,7 @@ class GameOverScreen:
 
             self.screen.fill(WHITE)
 
-            # 1. Título (Vitória ou Derrota)
+            # Título (Vitória ou Derrota)
             if self.metrics['resultado'] == "VITÓRIA":
                 titulo = "MISSÃO CUMPRIDA!"
                 cor_titulo = GREEN
@@ -60,7 +51,7 @@ class GameOverScreen:
 
             self.draw_text(titulo, self.title_font, cor_titulo, 50)
 
-            # 2. Métricas
+            # Métricas
             infos = [
                 f"Método Utilizado: {self.metrics['metodo']}",
                 f"Pontuação Final: {self.metrics['score']}",
@@ -76,7 +67,7 @@ class GameOverScreen:
 
                 self.draw_text(info, self.text_font, BLACK, start_y + (i * 40))
 
-            # 3. Instrução Final
+            # Instrução Final
             self.draw_text("Pressione qualquer tecla para sair...", self.btn_font, BLUE, 400)
 
             pygame.display.flip()

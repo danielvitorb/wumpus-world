@@ -2,7 +2,6 @@ import pygame
 import sys
 from src.utils.constants import WHITE, BLACK, GRAY
 
-# Configurações específicas do Menu (não precisam estar no constants.py global)
 WIDTH, HEIGHT = 500, 400
 DARK_GRAY = (100, 100, 100)
 

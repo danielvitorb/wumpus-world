@@ -3,7 +3,7 @@ from src.agent.algorithms import SearchAlgorithms
 
 class Agent:
     """
-    Agente Inteligente para o Mundo do Wumpus.
+    Agente Inteligente.
     Gerencia a Base de Conhecimento (KB), inferência lógica e tomada de decisão.
     """
 
@@ -14,13 +14,11 @@ class Agent:
         self.world = world
         self.rows = world.rows
         self.cols = world.cols
-        self.pos = (3, 0) # Posição inicial padrão (Canto inferior esquerdo)
+        self.pos = (3, 0)
 
-        # Base de Conhecimento (KB): 'UNKNOWN', 'SAFE', 'CAUTION', 'UNSAFE'
         self.kb = [['UNKNOWN' for _ in range(self.cols)] for _ in range(self.rows)]
         self.kb[self.pos[0]][self.pos[1]] = 'SAFE'
 
-        # Histórico e Estado
         self.visited = set()
         self.visited.add(self.pos)
         self.path_queue = []
@@ -29,7 +27,6 @@ class Agent:
         self.won = False
         self.message = "Explorando..."
 
-        # Métricas de Desempenho
         self.total_nodes = 0
         self.total_steps = 0
 
@@ -55,7 +52,6 @@ class Agent:
         for nr, nc in neighbors:
             current = self.kb[nr][nc]
 
-            # Conhecimento consolidado não muda com incerteza
             if current in ['SAFE', 'UNSAFE']:
                 continue
 
@@ -68,18 +64,14 @@ class Agent:
     def find_target(self):
         """
         Define o próximo objetivo estratégico.
-        Retorna: (target_pos, must_be_safe_boolean)
         """
-        # 1. Prioridade Máxima: Voltar para casa com o ouro
         if self.has_gold:
             return (3, 0), True
 
-        # 2. Explorar Células Seguras (SAFE)
         target = self.bfs_find_nearest('SAFE')
         if target:
             return target, True
 
-        # 3. Arriscar em Células Duvidosas (CAUTION)
         target = self.bfs_find_nearest('CAUTION')
         if target:
             self.message = "Arriscando..."
@@ -113,48 +105,39 @@ class Agent:
         """
         if self.game_over: return
 
-        # 0. Checagem de Vitória
         if self.has_gold and self.pos == (3, 0):
             self.message = "VITÓRIA! Ouro entregue em segurança."
             self.game_over = True
             self.won = True
             return
 
-        # 1. Percepção
         percepts = self.world.get_percepts(self.pos)
         if "Brilho" in percepts:
             self.has_gold = True
             self.message = "OURO! Voltando..."
-            self.path_queue = [] # Força replanejamento para voltar
+            self.path_queue = []
 
-        # 2. Raciocínio
         self.infer_knowledge(percepts)
 
-        # 3. Reação a Perigos (Interrupção de Plano)
         if (("Brisa" in percepts or "Fedor" in percepts) and self.path_queue):
             next_step = self.path_queue[0]
-            # Se o próximo passo não é garantido SAFE, para e pensa
             if self.kb[next_step[0]][next_step[1]] != 'SAFE':
                 self.path_queue = []
                 self.message = "Perigo! Recalculando..."
 
-        # 4. Planejamento (Se não houver movimentos na fila)
         if not self.path_queue:
             target, safe_only = self.find_target()
 
-            # Caso especial: Tem ouro mas não achou caminho seguro de volta -> Arrisca
             if self.has_gold and not target:
                 target = (3, 0)
                 safe_only = False
 
-            # Otimização: Se já estou no alvo, não busca
             if target == self.pos:
                 return
 
             if target:
                 args = (self.pos, target, self.kb, self.rows, self.cols, safe_only)
 
-                # Executa o algoritmo escolhido
                 if algorithm_name == "bfs":
                     path, nodes = SearchAlgorithms.bfs(*args)
                 elif algorithm_name == "dfs":
@@ -162,7 +145,6 @@ class Agent:
                 else:
                     path, nodes = SearchAlgorithms.a_star(*args)
 
-                # Fallback: Se falhou no modo seguro e pode arriscar, tenta sem filtro
                 if not path and safe_only:
                     self.message = "Sem rota segura. Tentando risco..."
                     args = (self.pos, target, self.kb, self.rows, self.cols, False)
@@ -170,7 +152,6 @@ class Agent:
                     elif algorithm_name == "dfs": path, nodes = SearchAlgorithms.dfs(*args)
                     else: path, nodes = SearchAlgorithms.a_star(*args)
 
-                # Acumula métricas
                 self.total_nodes += nodes
 
                 if path:
@@ -190,7 +171,6 @@ class Agent:
             dc = next_pos[1] - self.pos[1]
             move_action = (dr, dc)
 
-            # Efetiva o movimento no Environment
             new_pos, percepts, dead = self.world.step(move_action)
 
             self.pos = new_pos

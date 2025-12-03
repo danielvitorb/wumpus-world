@@ -1,5 +1,3 @@
-# src/utils/constants.py
-
 # --- CONFIGURAÇÕES DO GRID ---
 CELL_SIZE = 120  # Tamanho de cada célula em pixels
 ROWS = 4

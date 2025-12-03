@@ -5,14 +5,12 @@ class WumpusEnvironment:
     def __init__(self, layout=None):
         """
         Inicializa o ambiente.
-        :param layout: Uma matriz (lista de listas) representando o grid.
-                       Strings aceitas: 'P' (Poço), 'W' (Wumpus), 'G' (Ouro), '.' (Vazio), 'A' (Agente)
         """
         self.grid = []
         self.rows = ROWS
         self.cols = COLS
 
-        self.agent_pos = (3, 0)  # Padrão: Canto inferior esquerdo
+        self.agent_pos = (3, 0)
         self.gold_pos = None
         self.wumpus_pos = None
         self.pits = []
@@ -21,7 +19,6 @@ class WumpusEnvironment:
         self.won = False
         self.message = ""
 
-        # Se um layout for passado, carregamos ele. Senão, cria um padrão.
         if layout:
             self.load_custom_map(layout)
         else:
@@ -38,6 +35,7 @@ class WumpusEnvironment:
         self.scan_grid()
 
     def load_custom_map(self, layout):
+        # Mapa customizado, para implementações futuras
         self.grid = layout
         self.rows = len(layout)
         self.cols = len(layout[0])
@@ -106,17 +104,14 @@ class WumpusEnvironment:
         dr, dc = action
         nr, nc = self.agent_pos[0] + dr, self.agent_pos[1] + dc
 
-        # 1. Verifica Paredes
         if not (0 <= nr < self.rows and 0 <= nc < self.cols):
             return self.agent_pos, ["Batida"], False
 
-        # 2. Move o agente
         self.agent_pos = (nr, nc)
         current_cell = self.grid[nr][nc]
 
         percepts = self.get_percepts((nr, nc))
 
-        # 3. Verifica interações
         if current_cell == 'W':
             self.message = "MORREU! Comido pelo Wumpus."
             self.game_over = True
@@ -125,7 +120,5 @@ class WumpusEnvironment:
             self.game_over = True
         elif current_cell == 'G':
             self.message = "Achou o Ouro!"
-            # Mantemos o ouro no grid lógico para o agente continuar sentindo "Brilho"
-            # A interface é que vai esconder a imagem.
 
         return self.agent_pos, percepts, self.game_over

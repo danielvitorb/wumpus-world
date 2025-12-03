@@ -2,45 +2,32 @@ import os
 import pygame
 from src.utils.constants import CELL_SIZE
 
-# -------------------------------------------------------
-#  CONFIGURAÇÃO DE CAMINHOS (PATHS)
-# -------------------------------------------------------
-# 1. Pega o diretório onde ESTE arquivo está: .../Wumpus_Project/src/gui
 GUI_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 2. Sobe um nível para chegar em src: .../Wumpus_Project/src
 SRC_DIR = os.path.dirname(GUI_DIR)
 
-# 3. Sobe mais um nível para chegar na raiz: .../Wumpus_Project/
 ROOT_DIR = os.path.dirname(SRC_DIR)
 
-# 4. Define onde estão as pastas de imagens e audios
 IMG_DIR = os.path.join(ROOT_DIR, "assets", "images")
 AUDIO_DIR = os.path.join(ROOT_DIR, "assets", "audios")
 
-# Dicionário com o caminho COMPLETO de cada arquivo
 ASSET_PATHS = {
-    # Ambiente
     "GROUND": os.path.join(IMG_DIR, "ground.png"),
     "PIT": os.path.join(IMG_DIR, "pit.png"),
     "GOLD": os.path.join(IMG_DIR, "gold.png"),
     "WUMPUS": os.path.join(IMG_DIR, "wumpus.png"),
+    "UNEXPLORED": os.path.join(IMG_DIR, "unexplored.png"),
 
-    # Agente
     "AGENT_UP": os.path.join(IMG_DIR, "agent_up.png"),
     "AGENT_DOWN": os.path.join(IMG_DIR, "agent_down.png"),
     "AGENT_LEFT": os.path.join(IMG_DIR, "agent_left.png"),
     "AGENT_RIGHT": os.path.join(IMG_DIR, "agent_right.png"),
 
-    # UI / Outros
-    "UNEXPLORED": os.path.join(IMG_DIR, "unexplored.png"),
-
-    # Áudio
     "BG_MUSIC": os.path.join(AUDIO_DIR, "music.mp3"),
     "SND_GOLD": os.path.join(AUDIO_DIR, "gold.mp3"),
     "SND_BREEZE": os.path.join(AUDIO_DIR, "breeze.mp3"),
     "SND_STENCH": os.path.join(AUDIO_DIR, "stench.mp3"),
-    "SND_VICTORY": os.path.join(AUDIO_DIR, "victory.wav") # Mantendo .wav como combinamos
+    "SND_VICTORY": os.path.join(AUDIO_DIR, "victory.wav")
 }
 
 # -------------------------------------------------------
@@ -88,8 +75,6 @@ def load_all_assets():
     assets["AGENT_DOWN"] = load_image("AGENT_DOWN")
     assets["AGENT_LEFT"] = load_image("AGENT_LEFT")
     assets["AGENT_RIGHT"] = load_image("AGENT_RIGHT")
-
-    # Default
     assets["AGENT"] = assets["AGENT_UP"]
 
     return assets

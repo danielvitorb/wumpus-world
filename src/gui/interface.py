@@ -11,7 +11,6 @@ from src.utils.constants import (
     MOVE_DELAY, BLACK
 )
 
-
 class MundoWumpusGUI:
     def __init__(self, search_method):
         self.search_method = search_method
@@ -63,7 +62,6 @@ class MundoWumpusGUI:
 
         percepts = self.world.get_percepts(self.agent.pos)
 
-        # Brisa
         if "Brisa" in percepts:
             if not self.is_playing_breeze:
                 self.sfx['breeze'].play(loops=-1)
@@ -73,7 +71,6 @@ class MundoWumpusGUI:
                 self.sfx['breeze'].stop()
                 self.is_playing_breeze = False
 
-        # Fedor
         if "Fedor" in percepts:
             if not self.is_playing_stench:
                 self.sfx['stench'].play(loops=-1)
@@ -83,7 +80,6 @@ class MundoWumpusGUI:
                 self.sfx['stench'].stop()
                 self.is_playing_stench = False
 
-        # Ouro
         if self.agent.has_gold and not self.gold_sound_played:
             self.sfx['gold'].play()
             self.gold_sound_played = True
@@ -95,13 +91,11 @@ class MundoWumpusGUI:
         y = r * CELL_SIZE
         rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
 
-        # Chão
         self.screen.blit(self.images["GROUND"], (x, y))
 
         is_visited = (r, c) in self.agent.visited
         element = self.world.grid[r][c]
 
-        # Elementos (Poço, Ouro, Wumpus)
         if element == 'P':
             self.screen.blit(self.images["PIT"], (x, y))
         elif element == 'G' and not self.agent.has_gold:
@@ -116,7 +110,6 @@ class MundoWumpusGUI:
             lbl_rect = lbl_start.get_rect(center=(x + CELL_SIZE // 2, y + CELL_SIZE - 10))
             self.screen.blit(lbl_start, lbl_rect)
 
-        # Nevoa (Fog of War)
         if not is_visited:
             if "UNEXPLORED" in self.images:
                 self.screen.blit(self.images["UNEXPLORED"], (x, y))
@@ -126,7 +119,6 @@ class MundoWumpusGUI:
                 s.fill((0, 0, 0))
                 self.screen.blit(s, (x, y))
 
-        # Agente
         if (r, c) == self.agent.pos:
             key = f"AGENT_{self.agent_direction}"
             if key in self.images:
@@ -134,7 +126,6 @@ class MundoWumpusGUI:
             else:
                 self.screen.blit(self.images["AGENT"], (x, y))
 
-        # Percepções (Texto)
         if is_visited:
             percepts = self.world.get_percepts((r, c))
             if self.agent.has_gold and "Brilho" in percepts:
@@ -148,7 +139,6 @@ class MundoWumpusGUI:
                 self.screen.blit(txt_shadow, (x + 7, y_start + idx * line_h + 1))
                 self.screen.blit(txt, (x + 6, y_start + idx * line_h))
 
-        # Borda da célula
         pygame.draw.rect(self.screen, GRAY, rect, 1)
 
     def draw_hud(self):
