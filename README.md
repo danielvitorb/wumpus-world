@@ -15,14 +15,14 @@ Este projeto implementa uma simulação interativa do clássico problema de Inte
 O projeto foi desenvolvido em **Python** utilizando a biblioteca **Pygame** para a interface gráfica. O agente possui uma Base de Conhecimento (KB) dinâmica e permite ao usuário selecionar entre diferentes algoritmos de busca para a tomada de decisão:
 * **BFS (Busca em Largura)**
 * **DFS (Busca em Profundidade)**
-* **A* (A-Star Search)**
+* **A\* (A-Star Search)**
 
 ## Guia de Instalação e Execução
 
 Siga os passos abaixo para rodar o projeto em sua máquina local.
 
 ### 1. Instalação das Dependências
-Certifique-se de ter o **Python 3.13** instalado. Clone o repositório e instale as bibliotecas necessárias:
+Certifique-se de ter o **Python 3.8+** (recomendado 3.13) instalado. Clone o repositório e instale as bibliotecas listadas no `requirements.txt`:
 
 ```bash
 # Clone o repositório
@@ -43,22 +43,29 @@ Execute o comando abaixo no terminal para iniciar o servidor local:
 python main.py
 ```
 
-Se necessário, especifique a porta ou url de acesso, ex: http://localhost:8501
-
 ## Estrutura dos Arquivos
-
-[Descreva brevemente a organização das pastas]
-
-  * `src/`: Código-fonte da aplicação ou scripts de processamento.
-  * `notebooks/`: Análises exploratórias, testes e prototipagem.
-  * `data/`: Datasets utilizados (se o tamanho permitir o upload).
-  * `assets/`: Imagens, logos ou gráficos de resultados.
+    
+  * `main.py`: Gerencia o fluxo entre Menu e Jogo.
+  * `assets/`: Recursos multimídia.
+    * `images/`: Sprites do jogo.
+    * `audios`: Efeitos sonoros e música.
+  * `src/`: Código-fonte modularizado.
+    * `agent/`: Inteligência do Agente (Cérebro `player.py` e Algoritmos `algorithms.py`).
+    * `core/`: Modelo do Mundo (Regras `environment.py`).
+    * `gui/`: Interface Gráfica (Renderização `interface.py`, Menus e Telas).
+    * `utils/`: Configurações globais (`constants.py`)
 
 ## Resultados e Demonstração
 
-[Adicione prints da aplicação em execução ou gráficos com os resultados do modelo/agente. Se for uma aplicação Web, coloque um print da interface.]
+O sistema apresenta métricas em tempo real no HUD (Heads-Up Display) e um relatório final ao término da execução, contendo:
+
+* **Tempo de execução:** Duração da partida em segundos.
+
+* **Nós expandidos:** Custo computacional acumulado de todas as buscas realizadas (indica o esforço de replanejamento do agente).
+
+* **Custo do caminho:** Número total de passos físicos dados pelo agente no tabuleiro.
 
 ## Referências
 
-  * [Link para o Dataset original]
-  * [Artigo, Documentação ou Tutorial utilizado como base]
+  * RUSSELL, Stuart; NORVIG, Peter. Artificial Intelligence: A Modern Approach. 3rd ed. Prentice Hall, 2009. (Capítulo 7: Logical Agents).
+  * Documentação oficial do Pygame: https://www.pygame.org/docs/
