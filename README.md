@@ -22,16 +22,16 @@ O projeto foi desenvolvido em **Python** utilizando a biblioteca **Pygame** para
 Siga os passos abaixo para rodar o projeto em sua máquina local.
 
 ### 1. Instalação das Dependências
-Certifique-se de ter o **Python 3.x** instalado. Clone o repositório e instale as bibliotecas necessárias:
+Certifique-se de ter o **Python 3.13** instalado. Clone o repositório e instale as bibliotecas necessárias:
 
 ```bash
 # Clone o repositório
-git clone [INSIRA O LINK DO SEU REPOSITÓRIO AQUI]
+git clone https://github.com/danielvitorb/wumpus-world
 
 # Entre na pasta do projeto
 cd wumpus-world
 
-# Instale as dependências (neste projeto, a principal é o pygame)
+# Instale as dependências
 pip install -r requirements.txt
 ````
 
@@ -40,8 +40,7 @@ pip install -r requirements.txt
 Execute o comando abaixo no terminal para iniciar o servidor local:
 
 ```bash
-# Exemplo para Streamlit
-streamlit run src/app.py
+python main.py
 ```
 
 Se necessário, especifique a porta ou url de acesso, ex: http://localhost:8501
