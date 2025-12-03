@@ -1,14 +1,10 @@
 import pygame
 import sys
 import time
-
-# --- IMPORTS DA NOVA ESTRUTURA ---
 from src.gui.asset_loader import load_all_assets, ASSET_PATHS
 from src.core.environment import WumpusEnvironment
 from src.agent.player import Agent
 from src.gui.game_over import GameOverScreen
-
-# Importamos TUDO de constants.py para limpar este arquivo
 from src.utils.constants import (
     CELL_SIZE, ROWS, COLS, WIDTH, HEIGHT, HUD_HEIGHT,
     WHITE, GRAY, BG_COLOR, TEXT_COLOR, PERCEPTION_COLOR,
@@ -24,17 +20,14 @@ class MundoWumpusGUI:
         pygame.font.init()
         pygame.mixer.init(frequency=44100, size=-16, channels=8, buffer=2048)
 
-        # Usa as dimensões importadas de constants.py
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption(f"Wumpus World AI - {search_method.upper()}")
 
         self.font_info = pygame.font.SysFont("arial", 16)
         self.font_percept = pygame.font.SysFont("arial", 12, bold=True)
 
-        print("Carregando assets...")
         self.images = load_all_assets()
 
-        # --- ÁUDIO ---
         self.sfx = {}
         try:
             self.sfx['gold'] = pygame.mixer.Sound(ASSET_PATHS["SND_GOLD"])
@@ -58,7 +51,7 @@ class MundoWumpusGUI:
 
         # Controle de Tempo
         self.last_move_time = pygame.time.get_ticks()
-        self.move_delay = MOVE_DELAY  # Usa o valor centralizado (1000ms)
+        self.move_delay = MOVE_DELAY
 
         self.start_time = time.time()
         self.end_time = None

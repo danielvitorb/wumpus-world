@@ -9,7 +9,6 @@ class WumpusEnvironment:
                        Strings aceitas: 'P' (Poço), 'W' (Wumpus), 'G' (Ouro), '.' (Vazio), 'A' (Agente)
         """
         self.grid = []
-        # Agora usamos as constantes globais em vez de números fixos
         self.rows = ROWS
         self.cols = COLS
 
@@ -29,8 +28,7 @@ class WumpusEnvironment:
             self.load_default_map()
 
     def load_default_map(self):
-        # Mapa padrão para testes
-        # Nota: Se mudar ROWS/COLS em constants.py, precisará ajustar este mapa também!
+        # Mapa padrão
         self.grid = [
             ['.', '.', '.', 'P'],
             ['W', 'G', 'P', '.'],
@@ -59,7 +57,7 @@ class WumpusEnvironment:
                     self.pits.append((r, c))
                 elif item == 'A':
                     self.agent_pos = (r, c)
-                    self.grid[r][c] = '.'  # Limpa o agente do grid estático
+                    self.grid[r][c] = '.'
 
     def reset(self):
         self.game_over = False
@@ -78,7 +76,7 @@ class WumpusEnvironment:
 
     def get_percepts(self, pos):
         """
-        O ORÁCULO: Retorna o que o agente sente na posição atual.
+        Retorna o que o agente sente na posição atual.
         """
         r, c = pos
         percepts = set()
