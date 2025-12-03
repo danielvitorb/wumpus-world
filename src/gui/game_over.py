@@ -1,10 +1,7 @@
-# src/gui/game_over.py
-
 import pygame
 import sys
 from src.utils.constants import WHITE, BLACK, GREEN, RED, BLUE
 
-# Dimensões específicas para a tela de relatório (para caber o texto confortavelmente)
 WIDTH, HEIGHT = 500, 450
 
 
@@ -66,6 +63,7 @@ class GameOverScreen:
             # 2. Métricas
             infos = [
                 f"Método Utilizado: {self.metrics['metodo']}",
+                f"Pontuação Final: {self.metrics['score']}",
                 f"Nós Expandidos: {self.metrics['nos']}",
                 f"Custo do Caminho (Passos): {self.metrics['custo']}",
                 f"Tempo de Execução: {self.metrics['tempo']}"

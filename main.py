@@ -10,9 +10,6 @@ def main():
     pygame.init()
     pygame.mixer.init(frequency=44100, size=-16, channels=8, buffer=2048)
 
-    # -------------------------------------------------------
-    # 1. INICIAR MÚSICA DE FUNDO (LOOP)
-    # -------------------------------------------------------
     music_path = ASSET_PATHS.get("BG_MUSIC")
 
     if music_path and os.path.exists(music_path):
@@ -24,23 +21,14 @@ def main():
     else:
         print(f"AVISO: Música não encontrada em: {music_path}")
 
-    # -------------------------------------------------------
-    # 2. MENU INICIAL
-    # -------------------------------------------------------
-    # O código "pausa" aqui até o usuário escolher uma opção no menu
     menu = StartMenu()
     search_method = menu.run()
 
-    # Se o usuário fechar a janela do menu sem escolher, o retorno pode ser None
     if not search_method:
         print("Usuário fechou o jogo no menu.")
         pygame.quit()
         sys.exit()
 
-    # -------------------------------------------------------
-    # 3. JOGO PRINCIPAL
-    # -------------------------------------------------------
-    # Inicia a interface gráfica passando o algoritmo escolhido
     app = MundoWumpusGUI(search_method)
     app.run()
 

@@ -218,12 +218,19 @@ class MundoWumpusGUI:
 
                 duration = self.end_time - self.start_time
 
+                final_score = -self.agent.total_steps
+                if self.agent.won:
+                    final_score += 1000
+                else:
+                    final_score -= 1000
+
                 metrics = {
                     "resultado": "VITÓRIA" if self.agent.won else "DERROTA",
                     "metodo": self.search_method.upper(),
                     "nos": self.agent.total_nodes,
                     "custo": self.agent.total_steps,
-                    "tempo": f"{duration:.2f}s"
+                    "tempo": f"{duration:.2f}s",
+                    "score": final_score
                 }
 
                 screen_over = GameOverScreen(metrics)
