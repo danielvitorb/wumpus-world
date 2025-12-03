@@ -57,13 +57,13 @@ python main.py
 
 ## Resultados e Demonstração
 
-**1. Menu de seleção**
+### **1. Menu de seleção**
 ![Menu](assets/screenshots/menu.png)
 
-**2. Simulação em execução**
+### **2. Simulação em execução**
 ![Grid](assets/screenshots/agent_playing.png)
 
-**3. Relatório final**
+### **3. Relatório final**
 ![Final Screen](assets/screenshots/resume.png)
 
 O sistema apresenta métricas em tempo real no HUD (Heads-Up Display) e um relatório final ao término da execução, contendo:
