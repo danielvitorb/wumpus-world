@@ -49,6 +49,7 @@ python main.py
   * `assets/`: Recursos multimídia.
     * `images/`: Sprites do jogo.
     * `audios/`: Efeitos sonoros e música.
+    * `screenshots/`: Imagens para documentação
   * `src/`: Código-fonte modularizado.
     * `agent/`: Inteligência do Agente (Cérebro `player.py` e Algoritmos `algorithms.py`).
     * `core/`: Modelo do Mundo (Regras `environment.py`).
